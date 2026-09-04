@@ -4,8 +4,8 @@ Companion to `techpriest`. Every heresy below is enforced by `heresy-guard`, the
 `PreToolUse` hook: it denies the command and names the act, its cost, the directive broken
 and the correct incantation. Rule ids are stable — they key the session tallies.
 
-The catalogue in `src/catalogue.rs` is the executable form of this rite. Change one, change
-the other.
+The catalogue in `guard/src/catalogue.rs` is the executable form of this rite. Change one,
+change the other.
 
 ## 📜 Practices
 

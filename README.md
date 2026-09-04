@@ -16,7 +16,7 @@ re-anchor nudge when a source edit or a refactor request enters the conversation
 | `skills/techpriest/references/tooling.md` | which tool or command to reach for; key commands; tooling quirks |
 | `skills/techpriest/references/shell.md` | how to write Bash — the catalogue of heresies and the sanctioned form of each |
 | `skills/techpriest/references/code-style.md` | code authoring doctrine — surgical changes, patterns, libraries, apidoc |
-| `src/`, `Cargo.toml` | `heresy-guard`, the Rust `PreToolUse` judge |
+| `guard/` | `heresy-guard`, the Rust `PreToolUse` judge — a self-contained crate |
 | `hooks/` | `hooks.json` plus the bootstrap, guard and re-anchor scripts |
 | `examples/CLAUDE.md` | example user-level `CLAUDE.md` mandating the doctrine load |
 
@@ -27,19 +27,6 @@ session pays for depth only when the context calls for it.
 
 * **Rust toolchain** — `cargo` on `PATH`; the guard is built, not shipped.
 * **`jq`** — the bootstrap and re-anchor hooks speak JSON.
-
-## 🔨 Build
-
-The guard binary must exist before the `PreToolUse` gate does anything. Absent, the hook
-stays silent and the session bootstrap warns you.
-
-```
-cargo build --release
-cargo test
-```
-
-The hook resolves it at `${CLAUDE_PLUGIN_ROOT}/target/release/heresy-guard`, so build inside
-the installed plugin directory.
 
 ## 📥 Install
 
@@ -57,15 +44,35 @@ Use the git remote instead of the local path to install elsewhere:
 /plugin install techpriest@omnissiah
 ```
 
-Then build the guard in the installed copy — `/plugin` reports the path, typically
-`~/.claude/plugins/marketplaces/omnissiah`:
-
-```
-cargo build --release
-```
-
-Restart the session so `SessionStart` fires, and confirm the skill is listed and the bootstrap
+Restart the session — hooks load only at session start, so a freshly installed plugin's
+hooks take effect from the next one. Confirm the skill is listed and the bootstrap context
 carries no build warning.
+
+## 🔨 The guard builds itself
+
+Claude Code has no install-time hook, so the crate provisions itself at `SessionStart`:
+`bootstrap.sh` builds it when the binary is missing and `cargo` is present. That moment is
+the right one — `SessionStart` fires before any tool call, so the guard is armed before the
+first Bash command it must judge, and `cargo` no-ops on every later session.
+
+The first session after install therefore pays one cold build (hence `"timeout": 180` on the
+hook); afterwards the check costs milliseconds. Build output goes to stderr — visible under
+`claude --debug` — because stdout carries the hook's JSON and nothing else.
+
+Degradation is deliberate rather than silent:
+
+* **`cargo` absent** → no build, no denials, and the bootstrap says so.
+* **Build fails** → same, and the bootstrap tells you to run the build by hand and read the error.
+* **Binary missing at `PreToolUse`** → the gate exits silently. It never builds; it runs before
+  every Bash call and must stay instant, and a hook that blocks the session is worse than an
+  unjudged command.
+
+To build or test by hand:
+
+```
+cargo build --release --manifest-path guard/Cargo.toml
+cargo test --manifest-path guard/Cargo.toml
+```
 
 ## 📜 Adopt the doctrine
 
@@ -92,26 +99,27 @@ remove the old copies or they will double-fire and conflict by name:
 
 `heresy-guard` reads the `PreToolUse` payload on stdin. Silence means the command is
 sanctioned; a denial names the act, its cost, the directive forgotten and the correct
-incantation. Thirteen rules live in `src/catalogue.rs` — each carries its own indictment and
-the test that convicts it, so a rule cannot be half-defined or left unwired.
+incantation. Thirteen rules live in `guard/src/catalogue.rs` — each carries its own
+indictment and the test that convicts it, so a rule cannot be half-defined or left unwired.
 
 Denials tally per session and escalate through four rites — Re-Anchoring, Restoration,
 Recitation, Excommunication — each demanding a *different* penance, because a rite repeated
 verbatim stops being read. Repeating one specific heresy is judged separately: twice is
 choice, three times is habit. Tallies live under the system temp dir, keyed by session id.
 
-To add a heresy: add one `Rule` to `src/catalogue.rs`, add its sample command to the test
-table, and document it in `skills/techpriest/references/shell.md`. The tests fail if a rule
-lacks a sample or a sample fails to convict.
+To add a heresy: add one `Rule` to `guard/src/catalogue.rs`, add its sample command to the
+test table, and document it in `skills/techpriest/references/shell.md`. The tests fail if a
+rule lacks a sample or a sample fails to convict.
 
 ## 🔍 Verify the guard by hand
 
 ```
-echo '{"session_id":"smoke","tool_input":{"command":"cat f.txt"}}' | ./target/release/heresy-guard
+G=guard/target/release/heresy-guard
+echo '{"session_id":"smoke","tool_input":{"command":"less f.txt"}}' | $G
 ```
 
 A sanctioned command prints nothing:
 
 ```
-echo '{"session_id":"smoke","tool_input":{"command":"git grep -n foo"}}' | ./target/release/heresy-guard
+echo '{"session_id":"smoke","tool_input":{"command":"git grep -n foo"}}' | $G
 ```

@@ -1,9 +1,10 @@
 #!/bin/bash
 # heresy-guard.sh — PreToolUse gate delegating judgement to the compiled guard.
 #
-# The binary is built, not shipped, so an unbuilt plugin must never block work:
-# absent binary means silence, and the SessionStart rite reports the absence.
+# Never builds: this runs before every Bash call and must stay instant. The
+# SessionStart rite builds the binary and reports any failure, so an absent
+# binary here means silence rather than a blocked session.
 
-guard="${CLAUDE_PLUGIN_ROOT}/target/release/heresy-guard"
+guard="${CLAUDE_PLUGIN_ROOT}/guard/target/release/heresy-guard"
 [ -x "$guard" ] && exec "$guard"
 exit 0
