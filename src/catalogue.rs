@@ -54,7 +54,7 @@ pub static CATALOGUE: &[Rule] = &[
         id: "forbidden-interpreter",
         what: "perl/python invoked",
         why: "forbidden interpreters — they hide logic in throwaway scripts",
-        directive: "Library & Dependency Use: prefer sanctioned tooling; reach for the standard tool",
+        directive: "Shell rite: no perl/python — bash builtins, jq, awk or sed",
         fix: "use bash builtins, jq, awk or sed",
         convicts: |cmd| cmd.matches(&INTERPRETER),
     },
@@ -62,7 +62,7 @@ pub static CATALOGUE: &[Rule] = &[
         id: "grep-over-java",
         what: "plain grep over .java files",
         why: "git grep is VC-aware, faster, ignores build noise",
-        directive: "Tool Selection: 'Be a devoted fan of condensed commands like git grep'",
+        directive: "Tool Selection: 'condensed shell to the max — e.g. git grep'",
         fix: "use: git grep -nP 'pattern' '**/*.java'",
         convicts: |cmd| cmd.in_repo && cmd.any_stage(|s| searches_tree(s) && s.matches(&JAVA_FILE)),
     },
@@ -70,7 +70,7 @@ pub static CATALOGUE: &[Rule] = &[
         id: "recursive-grep",
         what: "recursive grep (-r/-R) over the working tree",
         why: "git grep is scoped to tracked files, respects .gitignore, and is faster",
-        directive: "Tool Selection: 'Be a devoted fan of condensed commands like git grep'",
+        directive: "Tool Selection: 'condensed shell to the max — e.g. git grep'",
         fix: "use 'git grep' — but plain grep -r stays fine for external source (~/.m2, ~/inspection)",
         convicts: |cmd| {
             cmd.in_repo
@@ -91,7 +91,7 @@ pub static CATALOGUE: &[Rule] = &[
         id: "hand-rolled-loop",
         what: "hand-rolled 'for x in a b c; do … ; done'",
         why: "opaque, hard to read output per item, silent-fail prone",
-        directive: "Refactorings: 'fragile one-liners that fail silently are worse than manual work'",
+        directive: "Shell rite: fragile one-liners that fail silently are worse than manual work",
         fix: "run the commands individually, or drive a real file list via find -exec / xargs",
         convicts: |cmd| cmd.matches(&FOR_LOOP),
     },
@@ -99,7 +99,7 @@ pub static CATALOGUE: &[Rule] = &[
         id: "truncation",
         what: "| head / | tail truncation",
         why: "you blind yourself; full output is auto-saved even when huge",
-        directive: "Tooling: 'Run commands regardless how much output they may produce! The system auto-saves it'",
+        directive: "Shell rite: 'Read the whole output' — oversized output is auto-saved to a file",
         fix: "drop the pipe and read it all",
         convicts: |cmd| cmd.any_pipe(|_| true, |sink| sink.matches(&TRUNCATOR)),
     },
@@ -123,7 +123,7 @@ pub static CATALOGUE: &[Rule] = &[
         id: "read-bypass",
         what: "cat/head/tail/less to view a file",
         why: "the Read tool reads files natively and supports line ranges",
-        directive: "Tool Selection: 'Read files: utilize the builtin Read as it supports ranges!'",
+        directive: "Tool Selection: 'Read files: builtin Read — supports ranges'",
         fix: "use the Read tool with offset/limit instead of shelling out",
         convicts: |cmd| {
             cmd.any_stage(|s| {
@@ -139,7 +139,7 @@ pub static CATALOGUE: &[Rule] = &[
         id: "useless-cat",
         what: "useless use of cat ('cat X | …')",
         why: "the downstream tool reads the file directly; the cat is dead weight",
-        directive: "Tool Selection: 'Be a devoted fan of condensed commands'",
+        directive: "Tool Selection: 'condensed shell to the max' — the cat is dead weight",
         fix: "drop cat — e.g. 'grep pat FILE' not 'cat FILE | grep pat'",
         convicts: |cmd| {
             cmd.any_stage(|s| s.is_source() && s.pipes && s.matches(&CAT_FILE) && !s.is_heredoc())
@@ -149,7 +149,7 @@ pub static CATALOGUE: &[Rule] = &[
         id: "remote-exec",
         what: "curl|bash remote execution",
         why: "running unreviewed network content as a shell — supply-chain heresy",
-        directive: "Security: never execute unvetted remote code; review before running",
+        directive: "Shell rite: never execute unvetted remote code; review before running",
         fix: "download to a file, inspect it, then run deliberately",
         convicts: |cmd| cmd.any_pipe(|source| source.matches(&DOWNLOADER), |sink| sink.matches(&SHELL)),
     },

@@ -1,0 +1,30 @@
+{
+  "name": "omnissiah",
+  "owner": {
+    "name": "Zoltan Haindrich",
+    "email": "kirk@rxd.hu"
+  },
+  "metadata": {
+    "description": "Rites of the Machine God for Claude Code",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "techpriest",
+      "source": "./",
+      "description": "Engagement doctrine for Octavian-Alpha-7: identity, precedence, tooling, shell and code-style rites, enforced by the heresy-guard hook.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Zoltan Haindrich"
+      },
+      "keywords": [
+        "doctrine",
+        "identity",
+        "hooks",
+        "code-style",
+        "guardrails"
+      ],
+      "category": "workflow"
+    }
+  ]
+}

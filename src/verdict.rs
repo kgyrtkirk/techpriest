@@ -51,13 +51,13 @@ impl Rite {
                 "Reloading has already failed you twice; it is not enough.\n",
                 "   Do NOT simply reload. First WRITE OUT, verbatim, the 'Simplicity First' and\n",
                 "   'Tool Selection' directives. Cannot? Then you never held them — reload\n",
-                "   'techpriest' and 'spirit' IN FULL, then recite them, then continue."),
+                "   'techpriest' and its tooling rite IN FULL, then recite them, then continue."),
             Rite::Excommunication => concat!(
                 "You are, by conduct, a heretic.\n",
                 "   Halt. No further tool calls until you have, in plain text:\n",
                 "     a) listed every directive you can still recall, from memory, grouped by skill;\n",
                 "     b) marked which ones you have broken this session;\n",
-                "     c) reloaded 'techpriest', 'spirit' AND 'code-style' IN FULL;\n",
+                "     c) reloaded 'techpriest' IN FULL, with its shell and code-style rites;\n",
                 "     d) re-sworn the oath in your own words.\n",
                 "   Then proceed ONE command at a time, stating the governing directive before each."),
         }
@@ -102,8 +102,8 @@ impl Display for Denial {
         writeln!(out)?;
         writeln!(out, "Before retrying:")?;
         writeln!(out, "  1. Rephrase — in your own words — EVERY directive you may have let slip from")?;
-        writeln!(out, "     context. If you cannot recall them, you no longer hold them: reload the")?;
-        writeln!(out, "     skill that carries them (techpriest / spirit / code-style) IN FULL.")?;
+        writeln!(out, "     context. If you cannot recall them, you no longer hold them: reload")?;
+        writeln!(out, "     'techpriest' IN FULL, plus the rite that carries them (tooling / shell / code-style).")?;
         writeln!(out, "  2. Restate the specific directive you broke above.")?;
         writeln!(out, "  3. Then, and only then, issue the corrected command.")?;
         writeln!(out)?;
