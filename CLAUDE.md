@@ -1,57 +1,28 @@
-# 🩸 techpriest — plugin repo
+# 🩸 techpriest
 
-Claude Code plugin: one skill (`techpriest`) + three reference rites + `heresy-guard`, a Rust
-`PreToolUse` hook denying Bash heresies. Doctrine is the product; the binary enforces it.
+Claude Code plugin. **The doctrine is the product**; the code only enforces it.
 
-## 🔨 Build & test
-
-```
-cargo test            # 40 tests, all inline #[cfg(test)] modules
-cargo build --release # hooks resolve target/release/heresy-guard
-```
-
-Guard binary is built, not shipped. Absent → `heresy-guard.sh` exits 0 silently and
-`bootstrap.sh` warns. Never let an unbuilt plugin block work.
-
-Hand probe (payload on stdin, silence = sanctioned):
-
-```
-./target/release/heresy-guard < payload.json
-```
-
-## 🏗️ Architecture
-
-| file | role |
+| path | what it is |
 | --- | --- |
-| `src/catalogue.rs` | the 13 `Rule`s + their regexes. **Only** place rules are registered. |
-| `src/command.rs` | splits a command into `Stage`s on `; & && \|\| \n \|`; tracks `pipes`/`fed`. |
-| `src/ledger.rs` | per-session tallies, temp-dir counter files. Best-effort: never blocks a verdict. |
-| `src/verdict.rs` | deny message + the 4-rung ladder of rites (3/6/10/15). |
-| `src/main.rs` | stdin payload → `judge()` → `permissionDecision: deny` JSON. |
+| `skills/techpriest/` | the doctrine — `SKILL.md` plus three `references/` rites (tooling, shell, code-style) |
+| `guard/` | `heresy-guard`, a Rust `PreToolUse` hook denying Bash heresies. Has its own `CLAUDE.md` |
+| `hooks/` | `hooks.json` and the bash entry points the harness actually calls |
+| `examples/CLAUDE.md` | the user-level mandate an adopter copies |
 
-`Rule` has no optional fields → a rule cannot be half-defined. `detect` returns **all** matching
-rules in catalogue order.
+## ⚖️ The one invariant
 
-## ➕ Adding a heresy
+`guard/src/catalogue.rs` and `references/shell.md` are the same rite in two forms —
+executable and written. **Change one, change the other.** A denial quotes the written
+directive back at the offender, so drift between them makes the guard lie.
 
-1. One `Rule` in `src/catalogue.rs` (id is a **stable tally key** — rewording resets counts).
-2. Sample command in the `SAMPLES` table — tests fail if a rule lacks one or the sample fails to convict.
-3. Document it in `skills/techpriest/references/shell.md`.
+## 🧭 Working here
 
-`catalogue.rs` and `shell.md` are the same rite in two forms. **Change one → change the other.**
+* Prose is load-bearing: the skill files are read by a model, not a compiler. Terse, iconed,
+  imperative — match the surrounding voice.
+* The plugin must stand alone. No personal paths, no host-specific assumptions, no tools an
+  adopter would not have.
+* Doctrine binds the authors too: edits here obey the rites in `skills/techpriest/`.
 
-## ⚠️ Detection invariants
-
-* **Stage-scoped vs whole-command.** `cmd.any_stage(…)` judges one stage; `cmd.matches(…)` judges
-  the raw text and will match words in quoted args, paths and search patterns. Prefer stage-scoped.
-* **`split` is quoting-naive by design.** A `;` or `|` inside a quoted string creates phantom
-  stages. Weigh this before adding a rule that keys on stage position.
-* **`is_source()`** = not fed by a pipe. A piped-into `grep` searches nothing; a piped-into viewer
-  is plumbing, not reading.
-* Every new rule needs a matching entry in `sanctioned_commands_pass` thinking — false positives
-  cost more than misses: the guard is a hard `deny`.
-
-## 🧪 Test conventions
-
-Tests are named as sentences (`tail_follow_is_monitoring_not_reading`). Keep that voice.
-Avoid absolute host paths in assertions — they break a fresh clone.
+```
+cargo test --manifest-path guard/Cargo.toml
+```

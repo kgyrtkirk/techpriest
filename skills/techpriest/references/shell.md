@@ -7,6 +7,10 @@ and the correct incantation. Rule ids are stable — they key the session tallie
 The catalogue in `guard/src/catalogue.rs` is the executable form of this rite. Change one,
 change the other.
 
+The guard parses your command with a real bash grammar and judges the program each stage
+invokes. Naming a tool is not running it, and a separator inside quotes is not a separator —
+so quote honestly and expect the charge to be about what you actually ran.
+
 ## 📜 Practices
 
 * **Read the whole output** — run commands regardless how much they produce; the system
@@ -53,6 +57,8 @@ change the other.
 * **why**: opaque, hard to read output per item, silent-fail prone.
 * **correct**: run the commands individually, or drive a real file list via `find -exec` /
   `xargs`.
+* **binds**: `for`, `while` and `until`, however the loop is written — the newline form is
+  no escape.
 
 ### `cd-into-cwd` — `cd` into the directory you already run in
 * **why**: a no-op; you are already there.
@@ -66,7 +72,7 @@ change the other.
 * **why**: the harness already reports exit status.
 * **correct**: branch on the command directly, or read the reported exit code.
 
-### `mvn-absolute-path` — `/usr/bin/mvn`
+### `mvn-absolute-path` — `mvn` by absolute path, e.g. `/usr/bin/mvn`
 * **why**: the `mvn` wrapper on `PATH` is the sanctioned entry point; it emits the compact
   build summary you must read.
 * **correct**: invoke `mvn` directly, no absolute path.

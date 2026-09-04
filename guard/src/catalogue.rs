@@ -56,7 +56,7 @@ pub static CATALOGUE: &[Rule] = &[
         why: "forbidden interpreters — they hide logic in throwaway scripts",
         directive: "Shell rite: no perl/python — bash builtins, jq, awk or sed",
         fix: "use bash builtins, jq, awk or sed",
-        convicts: |cmd| cmd.matches(&INTERPRETER),
+        convicts: |cmd| cmd.any_stage(|s| s.runs(&INTERPRETER)),
     },
     Rule {
         id: "grep-over-java",
@@ -93,7 +93,7 @@ pub static CATALOGUE: &[Rule] = &[
         why: "opaque, hard to read output per item, silent-fail prone",
         directive: "Shell rite: fragile one-liners that fail silently are worse than manual work",
         fix: "run the commands individually, or drive a real file list via find -exec / xargs",
-        convicts: |cmd| cmd.matches(&FOR_LOOP),
+        convicts: |cmd| cmd.loops(),
     },
     Rule {
         id: "truncation",
@@ -105,11 +105,11 @@ pub static CATALOGUE: &[Rule] = &[
     },
     Rule {
         id: "mvn-absolute-path",
-        what: "/usr/bin/mvn fully-qualified path",
+        what: "mvn invoked by absolute path",
         why: "the mvn wrapper on PATH is the sanctioned entry point",
         directive: "Tooling Quirks: use the 'mvn wrapper' — it emits the compact build summary you must read",
         fix: "invoke 'mvn' directly, no absolute path",
-        convicts: |cmd| cmd.matches(&MVN_ABSOLUTE),
+        convicts: |cmd| cmd.any_stage(|s| s.name.starts_with('/') && s.runs(&MVN)),
     },
     Rule {
         id: "mvn-diverted",
@@ -117,7 +117,7 @@ pub static CATALOGUE: &[Rule] = &[
         why: "the wrapper silences stdout — pipes & redirects produce garbage",
         directive: "Tooling Quirks: 'mvn wrapper — always read the full output; rely on exit code'",
         fix: "use mvn flags directly; do not pipe or redirect it",
-        convicts: |cmd| cmd.any_stage(|s| s.matches(&MVN) && s.diverts_output()),
+        convicts: |cmd| cmd.any_stage(|s| s.runs(&MVN) && s.diverts_output()),
     },
     Rule {
         id: "read-bypass",
@@ -163,17 +163,15 @@ macro_rules! pattern {
 }
 
 pattern!(CD_SELF = r#"^\s*cd\s+(\.|"?\$\(pwd\)"?|"?\$PWD"?)(\s|$)"#);
-pattern!(INTERPRETER = r"\b(perl|python[0-9.]*)\b");
+pattern!(INTERPRETER = r"^(perl|python[0-9.]*)$");
 pattern!(GREP = r"^\s*grep\b");
 pattern!(GIT_GREP = r"\bgit\s+grep\b");
 pattern!(JAVA_FILE = r"\.java\b");
 pattern!(RECURSIVE_FLAG = r"\s-[a-zA-Z]*[rR]|\s--(recursive|dereference-recursive)\b");
 pattern!(EXTERNAL_SOURCE = r"(\.m2|inspection|\.cargo|/usr/|/etc/|/var/)");
 pattern!(ECHO_STATUS = r"\becho\b.*\$\?");
-pattern!(FOR_LOOP = r"\bfor\s+[A-Za-z_]\w*\s+in\b.*;\s*do\b");
 pattern!(TRUNCATOR = r"^\s*(head|tail)\b");
-pattern!(MVN_ABSOLUTE = r"/usr/bin/mvn\b");
-pattern!(MVN = r"\bmvn\b");
+pattern!(MVN = r"^mvn$");
 pattern!(VIEWER = r"^\s*(cat|less|more|head|tail|sed\s+-n)\b(\s+-\w+)*\s+[^-\s]");
 pattern!(TAIL_FOLLOW = r"\btail\b.*-[a-zA-Z]*f\b");
 pattern!(CAT_FILE = r"^\s*cat\s+[^-<\s]");
@@ -353,5 +351,76 @@ mod tests {
             judge("cd . && cat f.txt | grep x && echo $?"),
             ["cd-self", "echo-exit-code", "useless-cat"]);
         assert_eq!(judge("python3 -c 'x' | head -3"), ["forbidden-interpreter", "truncation"]);
+    }
+
+    /// Cases the hand-rolled splitter got wrong. Each one is a command a working
+    /// engineer would legitimately type, or a heresy plainly written.
+    ///
+    /// `#[ignore]` marks the ones still outstanding — run them with
+    /// `cargo test -- --ignored` to see what is left to fix.
+    mod defects {
+        use super::*;
+
+        #[test]
+        fn a_word_naming_an_interpreter_is_not_an_invocation_of_it() {
+            assert_eq!(judge("git log --grep=python"), [] as [&str; 0]);
+            assert_eq!(judge("ls /home/dev/inspection/perl-tools"), [] as [&str; 0]);
+            assert_eq!(judge("python3 -c 'print(1)'"), ["forbidden-interpreter"]);
+        }
+
+        #[test]
+        fn a_word_naming_mvn_is_not_an_invocation_of_it() {
+            assert_eq!(judge("git grep -n mvn README.md | wc -l"), [] as [&str; 0]);
+            assert_eq!(judge("mvn compile | tee out"), ["mvn-diverted"]);
+        }
+
+        #[test]
+        fn a_separator_inside_a_quoted_argument_is_not_a_separator() {
+            assert_eq!(judge(r#"git commit -m "fix; cat the config properly""#), [] as [&str; 0]);
+            assert_eq!(judge("grep -E 'cat|dog' notes.txt"), [] as [&str; 0]);
+            assert_eq!(judge(r#"echo "a | head -1""#), [] as [&str; 0]);
+        }
+
+        #[test]
+        fn a_loop_is_convicted_in_both_its_written_forms() {
+            assert_eq!(judge("for f in a b c; do ls $f; done"), ["hand-rolled-loop"]);
+            assert_eq!(judge("for f in a b c\ndo\nls $f\ndone"), ["hand-rolled-loop"]);
+            assert_eq!(judge("while read l; do ls; done"), ["hand-rolled-loop"]);
+        }
+
+        #[test]
+        fn an_absolute_path_to_mvn_is_convicted_wherever_it_lives() {
+            assert_eq!(judge("/usr/bin/mvn compile"), ["mvn-absolute-path"]);
+            assert_eq!(judge("/opt/maven/bin/mvn compile"), ["mvn-absolute-path"]);
+        }
+
+        #[test]
+        #[ignore = "sed -n and more are convicted but the charge names neither"]
+        fn the_charge_names_every_viewer_it_convicts() {
+            let named = rule("read-bypass").what;
+            for viewer in ["cat", "head", "tail", "less", "more", "sed -n"] {
+                assert!(named.contains(viewer), "{named:?} does not name {viewer}");
+            }
+        }
+
+        #[test]
+        #[ignore = "EXTERNAL_SOURCE matches the search pattern, not just the path"]
+        fn an_external_path_spares_a_grep_only_when_it_is_the_target() {
+            assert_eq!(judge("grep -rn 'inspection' src"), ["recursive-grep"]);
+            assert_eq!(judge("grep -rn 'Foo' /home/dev/inspection/calcite"), [] as [&str; 0]);
+        }
+
+        #[test]
+        #[ignore = "no rule enforces the 300-char limit the doctrine promises"]
+        fn an_overlong_command_is_convicted() {
+            assert_eq!(judge(&format!("ls {}", "a".repeat(300))), ["overlong-command"]);
+        }
+
+        #[test]
+        #[ignore = "a compound command is one stage; its body escapes the stage rules"]
+        fn a_heresy_inside_a_loop_body_is_still_a_heresy() {
+            let convicted = judge("for f in a b c; do cat $f; done");
+            assert!(convicted.contains(&"read-bypass"), "{convicted:?}");
+        }
     }
 }

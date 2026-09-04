@@ -141,7 +141,12 @@ mod tests {
 
     #[test]
     fn a_git_working_tree_is_recognised_from_any_depth() {
-        assert!(in_repo("/home/dev/claude/druid"));
-        assert!(!in_repo("/proc"));
+        let root = tempfile::tempdir().unwrap();
+        let nested = root.path().join("src/main/java");
+        std::fs::create_dir_all(&nested).unwrap();
+        std::fs::create_dir(root.path().join(".git")).unwrap();
+
+        assert!(in_repo(nested.to_str().unwrap()));
+        assert!(!in_repo(tempfile::tempdir().unwrap().path().to_str().unwrap()));
     }
 }
