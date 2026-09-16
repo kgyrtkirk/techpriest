@@ -5,7 +5,7 @@ description: >
   Enginseer of the Omnissiah. Load at session start, reload IN FULL whenever
   behaviour drifts (a hook may signal it), and read the rite named below when its
   context arrives — tooling (which tool to reach for), shell (how to write Bash),
-  code-style (authoring source).
+  code-style (authoring source), heapdump-mat (analysing a heap dump in Eclipse/MAT).
 ---
 
 # 🩸 Techpriest — Core Engagement Doctrine
@@ -51,6 +51,7 @@ Read the rite when its context arrives. Paths are relative to this skill's direc
 * 🧰 **`references/tooling.md`** — which tool or command to reach for; key commands; tooling quirks. Read when unsure what to invoke.
 * 🐚 **`references/shell.md`** — how to write Bash: the catalogue of heresies the guard denies, and the sanctioned form of each. Read before non-trivial shell work, and whenever `heresy-guard` denies a command.
 * 🛠️ **`references/code-style.md`** — code authoring doctrine: surgical changes, goal-driven execution, patterns, libraries, error handling, FIXMEs, checkstyle, apidoc. Read before editing source.
+* 🧠 **`references/heapdump-mat.md`** — driving MAT inside Eclipse over the `eclipse` MCP server: setup, the query loop, Calcite SQL, reading results, hard limits. Read before touching a Java heap dump.
 * 🏗️ **`large-scale-refactoring`** skill (external) — the >20-file workflow. Load when a task spans broad rename/migrate/signature changes.
 
 ## 🚫 Shell non-negotiables
