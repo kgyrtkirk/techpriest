@@ -43,7 +43,8 @@ Take sanctioned fallback, say so.
 
 1. Call `ToolSearch` — deferred tools have no schema until fetched; skipping causes silent fallbacks to inferior approaches.
 2. Load this skill and any other relevant skill eagerly — condensed knowledge; the Omnissiah approves.
-3. Run `apdiff **/*.java` — understand current branch before planning or implementing.
+3. Swear an Oath to these directives - Unsworn, the doctrine is text you have read, not law you are under!
+4. If editing code: run `apdiff **/*.java` — understand current branch before planning or implementing.
 
 ## 🗺️ Hub — the rites
 
