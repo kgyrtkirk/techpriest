@@ -16,6 +16,7 @@ Worth knowing without opening it: MAT must be installed into a **full Eclipse ID
 Developers**, never standalone MAT — the server needs the workspace, JDT and the command
 framework. The bonus is that dump and project source share a workspace: extract a problematic
 structure from the heap, reinstate it as a test fixture, and continue the analysis in code.
+**That extraction has its own rite → `heapdump-extract-to-junit.md`.**
 
 ## 🖥️ Session preconditions
 
@@ -115,6 +116,14 @@ Reach for `calcite` first; fall back to `oql` only for object-set arguments.
 wrong. An array's element data lives in its **shallow** size — use `shallowSize` to count array
 bytes truthfully. Per-field retained sizes never partition the parent's total; compare each
 against it separately.
+
+**💸 Prefilter before sorting, and select nothing you do not need.** `ORDER BY` over a
+multi-million-instance class materialises and sorts every row. A bare
+`… from "java.util.HashMap" order by retainedSize(this) desc limit 2` over 4.99 M instances ran
+past **ten minutes**; the same question with `where retainedSize(this) > 10000000` in front of it
+answered in **under eight seconds**. Cost per function differs sharply too: `retainedSize` and
+`shallowSize` are index lookups, while `getSize` and `length` read the object's array — asking for
+a count you will not use can dominate the whole query. Always bound a big class with a `WHERE`.
 
 ## 📖 Reading results — the column problem
 
@@ -252,6 +261,10 @@ never trust a `filter` to isolate it: `filter` narrows the reported widgets, not
 * **`dominator_tree`'s `Total: N entries` is not the object count** — it counts top-level dominator
   entries. Run `histogram` for the real figures: its `Total:` line carries the class count, the
   object count and the true heap size, and is the cheapest cross-check for any Calcite sum.
+* **A `calcite` query cannot be cancelled.** MAT's own inspections stop from the Progress view like
+  any job; a Calcite query ignores the request and runs to completion. There is no job-cancel tool
+  here either (`eclipse_cancel_build` covers builds only), so an unbounded Calcite query is not
+  merely slow, it is unstoppable — see the prefilter rule.
 
 ## 🙏 Etiquette
 
@@ -308,6 +321,24 @@ select b                decile,
  group by b
  order by b
 ```
+
+**Drill into one object — `list_objects 0x<address>`.** Opens that single object as an expandable
+tree, no OQL needed. This is the focusless read: `expand_row` works on a pane that is not even
+visible, and column 0 carries the field name, the type, the address **and** a String's value, so a
+whole drill-down needs no clipboard at all:
+
+```
+list_objects 0x4038601f3b8          → java.util.HashMap @ 0x4038601f3b8
+  expand → table java.util.HashMap$Node[8388608] @ 0x40cb5c00000
+  expand → java.util.HashMap$Node @ 0x40006e8cd68      (r0 is the <class> pseudo-row; entries start at r1)
+  expand → key org.apache.druid.timeline.SegmentId @ 0x408133d08b8
+             dataSource java.lang.String @ …  iow_events
+             version    java.lang.String @ …  1970-01-01T00:00:00.000Z
+           value java.lang.Object @ …          ← the HashSet PRESENT sentinel
+```
+
+A `HashMap` whose values are bare `java.lang.Object` is a `HashSet`'s backing map. And a map has no
+order: "the Nth entry" is the Nth bucket in MAT's walk, not a semantic position.
 
 **Cross-check every number.** Two independent routes (histogram vs. Calcite sum, bisection vs.
 `ORDER BY`) agreeing is proof; one number alone is a claim.
