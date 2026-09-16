@@ -19,11 +19,13 @@ structure from the heap, reinstate it as a test fixture, and continue the analys
 
 ## 🖥️ Session preconditions
 
-* **X11 required.** `press_key` uses `Display.post`; Wayland compositors silently drop it.
-  Check `/tmp/.X11-unix/X0`. No X11 → keyboard-driven MAT is dead, and most of this rite with it.
+* **X11 is needed only for key posts.** `press_key` uses `Display.post`; Wayland compositors
+  silently drop it. Check `/tmp/.X11-unix/X0`. No X11 → drive MAT through **commands** instead:
+  `executeInspection` + `dismiss_dialog` runs a query, `org.eclipse.ui.edit.copy` reads the result.
+  Both are handler calls, not key posts, so the rite survives without X11.
 * **`xclip` installed**, reachable as `DISPLAY=:0 xclip -o -selection clipboard`.
-* The IDE must be **foreground** for any key post. This steals the user's focus every time —
-  unavoidable, so batch work and say so.
+* The IDE must be **foreground** for any key post, and fronting is also the only lever that moves
+  SWT focus. This steals the user's focus every time — unavoidable, so batch work and say so.
 
 ## 🔁 The query loop — do exactly this
 
@@ -53,6 +55,25 @@ eclipse_wait_until_quiet     timeoutSeconds: 25     # names the running job = th
   the folded `||` form, print the plain multi-column version next to it so the human can dig
   further by hand. The escaped one-liner is noise — show it only when the tokenizer itself is
   the problem.
+
+### 🜂 Keyless variant — no `Display.post` at all
+
+`org.eclipse.mat.ui.actions.executeInspection` takes a mandatory `commandName`. It does **not**
+execute the command: it opens the query argument wizard, modal, holding the UI thread, so the call
+answers `timedOut: true` with `handlerFinished: false`. That is the expected shape, not a failure.
+
+```
+eclipse_set_part_state        part: …HeapEditor, state: activated
+eclipse_run_workbench_command org.eclipse.mat.ui.actions.executeInspection
+                              parameters: { …executeInspection.commandName: "<command line>" }
+                              # answers timedOut after 10 s — the wizard is up, UI thread held
+eclipse_list_ui_targets                                   # find the modal dialog
+eclipse_dismiss_dialog        button: "Finish", dryRun: false   # THIS executes the query
+eclipse_wait_until_settled  →  eclipse_wait_until_quiet
+```
+
+Use it when there is no X11, or when an Enter keeps landing in the wrong control. Dismissing with
+no button cancels instead, which is the safe way out of a wizard opened by mistake.
 
 ## 🔤 Command-line quoting
 
@@ -136,23 +157,28 @@ select count(*)                                   n,
 ### 2. ⚠️ Clipboard — works, but avoid it
 
 Valid fallback for a genuinely wide table (histogram, dominator tree) where folding every column
-would be unreadable. **It overwrites the user's clipboard and steals window focus — it pollutes
+would be unreadable, and the **only** way to read a built-in query's numeric columns — a built-in
+carries no SQL to fold. **It overwrites the user's clipboard and steals window focus — it pollutes
 the state of their machine.** Exhaust folding first; when used, say so.
 
 ```
-eclipse_set_ide_visibility visible:true
-eclipse_set_selection      <row paths in the result pane>
-eclipse_press_key          Ctrl+C          # assert posted:true AND focusControl Table|Tree
+eclipse_select_tab            0/0/2, index: <K>          # render the pane you want
+eclipse_set_ide_visibility    visible: true              # THE focus lever — see the focus model
+eclipse_run_workbench_command org.eclipse.ui.edit.copy   # a command, NOT a key post
 DISPLAY=:0 xclip -o -selection clipboard
 ```
 
-* Copies **every materialized row** (~25–34) plus the `Total:` line — the selection barely
-  matters.
-* Assert `posted: true`. A failed post is silent.
-* Assert `focusControl` is `Table` or `Tree`. **OQL and Calcite *editor* panes focus a
-  `StyledText`**, so Ctrl+C copies the query text, not the result. Query-result panes rendered
-  as a plain `Table` are the ones that copy.
-* **Aggregate Calcite panes do not copy** — Ctrl+C returns just the class name. Fold instead.
+* **Never `press_key Ctrl+C`.** `org.eclipse.ui.edit.copy` does the same work as a handler call:
+  no `Display.post`, no Wayland dependency, and no *"IDE is not the active window"* refusal — it
+  copies happily while `eclipse_screenshot` reports `foreground: false`.
+* **Never `set_selection` first.** It never reaches the selection service and changes nothing
+  about what is copied. It is cargo cult.
+* Copies **every materialized row** (~25–34) plus the `Total:` line.
+* `outcome: "notHandled"` means no pane holds focus — activate the part, front it, repeat.
+* **OQL and Calcite *editor* panes focus a `StyledText`**, so a copy there returns the query text,
+  not the result. Query-result panes rendered as `Table` or `Tree` are the ones that copy.
+* Aggregate Calcite panes **do** copy — folded and grouped results come back whole, `Total:` line
+  included. (An earlier revision of this rite claimed they do not. It was wrong.)
 
 ### 3. Pane types tell you what happened
 
@@ -162,6 +188,35 @@ DISPLAY=:0 xclip -o -selection clipboard
   result: …`), or screenshot the pane as a last resort.
 * An empty result passed as a query **argument** (e.g. `list_objects <oql>`) raises a **blocking
   modal error dialog** — clear it with `eclipse_dismiss_dialog`.
+
+## 🎯 Focus model — the cause of most lost turns
+
+MAT's copy acts on the last SWT **focused** control, which is not necessarily the visible one.
+Exactly one lever moves focus:
+
+| lever | renders the pane | moves focus |
+|---|---|---|
+| `eclipse_select_tab` | ✅ | ❌ |
+| `eclipse_set_selection` | — | ❌ |
+| `eclipse_set_part_state activated` | ✅ | ❌ — restores MAT's *stale* focus control |
+| `eclipse_set_ide_visibility visible: true` | — | ✅ |
+
+A pane can therefore be selected, rendered and reported `visible: true` while a copy returns a
+different, hidden pane — verified three times against three levers. **Front the IDE between
+selecting the tab and copying, every time.** A freshly opened result pane does **not** take focus
+on its own; the pane focused by the last real key event keeps it.
+
+## 🗂️ Tabs → panes, deterministic
+
+One call maps them, and the labels carry the full query text, so panes identify themselves:
+
+```
+eclipse_get_widget_tree part: …HeapEditor, path: 0/0/2, includeItems: true, maxDepth: 1
+```
+
+Tab item `iK` ⟺ pane composite `0/0/2/(K+1)` — child `0` of the folder is the ToolBar. The pane's
+own control is `0/0/2/(K+1)/0`. Never hunt for a new result pane with a deep `maxDepth` walk, and
+never trust a `filter` to isolate it: `filter` narrows the reported widgets, not the rows.
 
 ## 🌲 Tree navigation
 
@@ -189,6 +244,14 @@ DISPLAY=:0 xclip -o -selection clipboard
   one good query beats six probes.
 * `eclipse_run_script` chains **MCP tools only** — it is not a scripting engine. There is no
   back door to MAT's `ISnapshot` API.
+* **`inspect_widget` on a row reports no cell text** — CSS properties and an ancestor chain only.
+  It is not a way around the column problem.
+* **No export command exists.** `list_commands filter: "export"` yields the generic
+  `org.eclipse.ui.file.export` wizard and EclEmma, nothing of MAT's. Its CSV and HTML exports are
+  JFace actions, unreachable like the rest of the context menu.
+* **`dominator_tree`'s `Total: N entries` is not the object count** — it counts top-level dominator
+  entries. Run `histogram` for the real figures: its `Total:` line carries the class count, the
+  object count and the true heap size, and is the cheapest cross-check for any Calcite sum.
 
 ## 🙏 Etiquette
 
