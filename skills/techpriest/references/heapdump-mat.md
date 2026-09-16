@@ -6,30 +6,16 @@ server. Binding while that work lasts.
 The heap dump is opened by a human in a running Eclipse; the agent drives MAT through the
 widget layer. Everything here is what actually works — not what the tool descriptions imply.
 
-## 🏗️ Setup (one time)
+## 🏗️ Setup
 
-1. **Install a recent Eclipse IDE for Java Developers** — e.g. `eclipse-2026-09-R-java`. Take
-   the full Java package, not a stripped platform.
-2. **Install the vogella MCP server** into that Eclipse (Help → Install New Software, or drop
-   the bundle into `plugins/`).
-3. **Install the Memory Analyzer (MAT) plug-in** into the *same* installation — `Memory
-   Analyzer` plus `Memory Analyzer (Charts)`.
-4. **Install `MatCalcitePlugin`** (vlsi) into the same installation. Not optional in practice —
-   see 🔷 below.
-5. **Enable the MCP server**: Preferences → General → MCP Server. The call timeout lives here
-   too; raise it when queries outlive the default.
-6. **Open the heap dump inside the IDE** (`File → Open File…`). MAT parses and indexes it; the
-   agent works against that live snapshot.
+Assumed working. **If the `eclipse` MCP server is missing, misbehaving, or the user is having
+trouble getting it running → read `eclipse-mcp-setup.md`** (update site URLs, `eclipse.ini`
+heap, client wiring, verification, troubleshooting).
 
-### 🔷 Why the IDE, not standalone MAT
-
-Standalone MAT is a stripped RCP app. The MCP server needs far more of the platform than it
-ships — workspace, JDT, the command and handler framework, editors and views the tools
-address. Start from the **Eclipse Java IDE** and add MAT to it, never the other way round.
-
-The payoff beyond querying: the same IDE holds the *project source*. Extract a problematic
-structure from the dump, reinstate it as a fixture in a test, run it, and keep the analysis
-going in code — dump and repro in one workspace.
+Worth knowing without opening it: MAT must be installed into a **full Eclipse IDE for Java
+Developers**, never standalone MAT — the server needs the workspace, JDT and the command
+framework. The bonus is that dump and project source share a workspace: extract a problematic
+structure from the heap, reinstate it as a test fixture, and continue the analysis in code.
 
 ## 🖥️ Session preconditions
 
@@ -63,8 +49,10 @@ eclipse_wait_until_quiet     timeoutSeconds: 25     # names the running job = th
   scheduled. `wait_until_settled` first, then wait.
 * **`run_script` has a 30 s budget.** Long queries: run the steps, then call `wait_until_quiet`
   separately, repeatedly.
-* **Print the SQL pretty-formatted to the console before running it.** Always. The escaped
-  one-liner is noise — show it only when the tokenizer itself is the problem.
+* **Print the SQL pretty-formatted to the console before running it.** Always. When the query is
+  the folded `||` form, print the plain multi-column version next to it so the human can dig
+  further by hand. The escaped one-liner is noise — show it only when the tokenizer itself is
+  the problem.
 
 ## 🔤 Command-line quoting
 
@@ -110,20 +98,46 @@ against it separately.
 ## 📖 Reading results — the column problem
 
 **The widget tree exposes column 0 only.** Row text gives the class name and `@ 0x…` address;
-every number (objects, shallow, retained, percentage) is invisible there. Two ways out:
+every number (objects, shallow, retained, percentage) is invisible there.
 
-### 1. Fold into one text column — preferred, least intrusive
+### 1. 🥇 Fold into one text column with `||` — the default, always try first
+
+Concatenate every value into a single `varchar` column. Column 0 is the one thing the widget
+tree always reads, so the whole answer arrives straight from `eclipse_get_widget_tree`:
 
 ```sql
-select 'n='   || cast(count(*)               as varchar) ||
-       ' tot='|| cast(sum(retainedSize(this)) as varchar) info
+select 'n='    || cast(count(*)                as varchar) ||
+       ' tot=' || cast(sum(retainedSize(this)) as varchar) ||
+       ' lookup=' || cast(sum(retainedSize(this['lookup'])) as varchar) info
   from "io.example.Foo"
 ```
 
-Column 0 now carries everything. No clipboard, no focus grab, no copy quirks. Make this the
-default for scalar and small aggregate results.
+No clipboard, no focus theft, no copy quirks, no machine state touched. **Use this for every
+scalar, aggregate and small grouped result** — including histograms, where one folded row per
+bucket reads perfectly:
 
-### 2. Clipboard — for real multi-column tables
+```sql
+select 'decile=' || cast(b         as varchar) ||
+       ' arrays='|| cast(count(*)  as varchar) info
+  from ( … ) group by b order by b
+```
+
+**Always print the multi-column equivalent alongside it**, so the human can paste it into the
+Calcite tab and dig further with real sortable columns:
+
+```sql
+-- folded above; multi-column version for interactive digging:
+select count(*)                                   n,
+       sum(retainedSize(this))                    tot,
+       sum(retainedSize(this['lookup']))          lookup
+  from "io.example.Foo"
+```
+
+### 2. ⚠️ Clipboard — works, but avoid it
+
+Valid fallback for a genuinely wide table (histogram, dominator tree) where folding every column
+would be unreadable. **It overwrites the user's clipboard and steals window focus — it pollutes
+the state of their machine.** Exhaust folding first; when used, say so.
 
 ```
 eclipse_set_ide_visibility visible:true
@@ -138,7 +152,7 @@ DISPLAY=:0 xclip -o -selection clipboard
 * Assert `focusControl` is `Table` or `Tree`. **OQL and Calcite *editor* panes focus a
   `StyledText`**, so Ctrl+C copies the query text, not the result. Query-result panes rendered
   as a plain `Table` are the ones that copy.
-* **Aggregate Calcite panes do not copy** — Ctrl+C returns just the class name. Use folding.
+* **Aggregate Calcite panes do not copy** — Ctrl+C returns just the class name. Fold instead.
 
 ### 3. Pane types tell you what happened
 
@@ -209,6 +223,22 @@ select 'decile='|| cast(b           as varchar) ||
        ' nulls=' || cast(sum(len-sz) as varchar) info
   from (select length(this['tbl'])                     len,
                getSize(this['tbl'])                    sz,
+               (getSize(this['tbl'])*10)/length(this['tbl']) b
+          from "io.example.Foo"
+         where length(this['tbl']) > 0)
+ group by b
+ order by b
+```
+
+Multi-column version of the same, to hand over for interactive digging:
+
+```sql
+select b                decile,
+       count(*)         arrays,
+       sum(len)         slots,
+       sum(len-sz)      nulls
+  from (select length(this['tbl'])                          len,
+               getSize(this['tbl'])                         sz,
                (getSize(this['tbl'])*10)/length(this['tbl']) b
           from "io.example.Foo"
          where length(this['tbl']) > 0)
