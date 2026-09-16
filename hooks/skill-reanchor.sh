@@ -24,7 +24,7 @@ case "$event" in
   UserPromptSubmit)
     prompt=$(jq -r '.prompt // ""' <<<"$input")
     if echo "$prompt" | grep -qiE '\b(refactor|migrat|rename|signature change|large-scale)\b'; then
-      emit "UserPromptSubmit" "🏗️ Broad-change intent. Load the 'large-scale-refactoring' skill IN FULL before proceeding."
+      emit "UserPromptSubmit" "🏗️ Broad-change intent. Read the refactoring rite IN FULL before proceeding: ${rites}/refactoring.md"
     fi
     ;;
 esac

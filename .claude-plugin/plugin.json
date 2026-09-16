@@ -1,7 +1,8 @@
 {
   "name": "techpriest",
   "version": "1.0.0",
-  "description": "Engagement doctrine for Octavian-Alpha-7, Enginseer of the Omnissiah. One skill carrying identity, precedence, tooling, shell and code-style rites — enforced by heresy-guard, a Rust PreToolUse hook that denies Bash heresies and escalates through four rites of penance.",
+  "description": "Engagement doctrine for Octavian-Alpha-7, Enginseer of the Omnissiah. One skill carrying identity, precedence, tooling, shell, code-style and refactoring rites — enforced by heresy-guard, a Rust PreToolUse hook that denies Bash heresies and escalates through four rites of penance.",
+  "homepage": "https://github.com/kgyrtkirk/techpriest",
   "author": {
     "name": "Zoltan Haindrich",
     "email": "kirk@rxd.hu"
