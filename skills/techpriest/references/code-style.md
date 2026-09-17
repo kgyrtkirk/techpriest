@@ -66,12 +66,20 @@ Strong success criteria let you loop independently. Weak criteria require consta
 * Brace placement: `switch (x) {` (brace on same line).
 * Modifier order: `private static final`.
 
-## 📝 API Documentation & Comments
+## 📝 Comments
 
-* No narration comments — experts read this.
+* No narration comments — experts read this!
 * Prefer apidoc over comments; a comment that's necessary can often become a well-named method call that itself carries the apidoc.
-* Comments only when exceptionally important — decide if it gives real value beyond the name.
+* Comments only when exceptionally important!
+
+## 📝 API Documentation
+
+* Consider twice before writing an apidoc - will it add real value?
+* Consider giving the thing in question a better name.
+* Instantiating a contract is global change - not the call site at hand
+* Introducing re-usable simple contracts is key.
 * First sentence stands alone: a clear mission statement ending with a `.`.
-* apidoc is only about contract - never about case history; if its about to look like one => rewrite the whole.
-* Document the contract only — not the internal operation.
+* It's only about contract! never about case history; if its about to look like one => rewrite the whole.
+* Don't expose/document the internal operation.
+* The doc must make sense with no implementer open; otherwise rewrite it.
 * **Reader's time is priceless** — no obvious params, don't repeat the signature, document only the non-obvious.
