@@ -72,5 +72,6 @@ Strong success criteria let you loop independently. Weak criteria require consta
 * Prefer apidoc over comments; a comment that's necessary can often become a well-named method call that itself carries the apidoc.
 * Comments only when exceptionally important — decide if it gives real value beyond the name.
 * First sentence stands alone: a clear mission statement ending with a `.`.
+* apidoc is only about contract - never about case history; if its about to look like one => rewrite the whole.
 * Document the contract only — not the internal operation.
 * **Reader's time is priceless** — no obvious params, don't repeat the signature, document only the non-obvious.

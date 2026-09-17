@@ -60,7 +60,21 @@ Location: `https://vlsi.github.io/mat-calcite-plugin-update-site/stable/`
 Installs `MatCalcitePlugin` + wrapped `calcite-core`/`avatica`.
 Home: <https://github.com/vlsi/mat-calcite-plugin>
 
-## 5️⃣ Enable and wire
+## 5️⃣ Auspex Mortis — MAT through the API, not the widgets
+
+Location: `https://kgyrtkirk.github.io/auspex-mortis/`
+Feature: **Auspex Mortis** (`hu.rxd.auspex.mortis.feature.feature.group`). Restart.
+Home: <https://github.com/kgyrtkirk/auspex-mortis>
+
+⚠️ The one URL here not yet read back from an installation: it goes live with the repository's
+first GitHub Pages deploy. Until then, build it and install from the local
+`file:/…/update-site/hu.rxd.auspex.mortis.repository/target/repository`.
+
+Adds `mat_query`, `mat_object` and `mat_extract` to the MCP server. Needs 2️⃣ and 3️⃣; uses 4️⃣
+when present, for the Calcite editor pane. With it installed, `heapdump-mat.md`'s widget route
+is the fallback. **Its tools register only at IDE startup** — the restart is not optional.
+
+## 6️⃣ Enable and wire
 
 **Preferences → General → MCP Server** — enable; note **port** and **auth token**; the **call
 timeout** lives here too.
@@ -84,18 +98,20 @@ Lands in `~/.claude.json` under the project:
 
 🔒 Token is a secret. Read from Preferences; never into docs, commits or chat.
 
-## 6️⃣ Open the dump
+## 7️⃣ Open the dump
 
 `File → Open File…` → `.hprof` / `.hprof.gz`. Heap editor part id:
 `org.eclipse.mat.ui.editors.HeapEditor`.
 
 ## ✅ Verify
 
-1. `eclipse_get_installation` → `runtime.agrees: true`; filter `memory`, `calcite`, `mcp` to
-   confirm all three features.
-2. `eclipse_list_editors` → the dump, id `org.eclipse.mat.ui.editors.HeapEditor`.
+1. `eclipse_get_installation` → `runtime.agrees: true`; filter `memory`, `calcite`, `mcp`,
+   `auspex` to confirm all four features.
+2. The tool list carries `mat_query` → Auspex Mortis registered. `mat_query histogram` with no
+   dump open answers *"No heap dump is open in the IDE"* — that refusal is the proof it runs.
+3. `eclipse_list_editors` → the dump, id `org.eclipse.mat.ui.editors.HeapEditor`.
 
-1 passing but 2 empty → install is fine, the user just has not opened the dump.
+1 and 2 passing but 3 empty → install is fine, the user just has not opened the dump.
 
 ## 🩺 Troubleshooting
 
@@ -111,3 +127,8 @@ Lands in `~/.claude.json` under the project:
   read-only.
 * **Query seems stuck** → `eclipse_wait_until_quiet` names the job. It may be the user's own
   query from the Calcite tab holding the snapshot.
+* **`mat_*` tools missing after an install** → the IDE was not restarted; tools register at
+  startup only.
+* **Old behaviour after upgrading Auspex Mortis** → two bundles contribute the same tool name.
+  `McpToolRegistry` keeps the first and only logs *"Duplicate MCP tool name … ignoring it"*.
+  Uninstall the old feature (dry run first), then restart.

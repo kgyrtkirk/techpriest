@@ -6,6 +6,9 @@ server. Binding while that work lasts.
 The heap dump is opened by a human in a running Eclipse; the agent drives MAT through the
 widget layer. Everything here is what actually works — not what the tool descriptions imply.
 
+**Check the tool list first**: with the `mat_*` tools present, read the next section and skip
+the widget layer entirely. Everything after it is the route for an IDE without them.
+
 ## 🏗️ Setup
 
 Assumed working. **If the `eclipse` MCP server is missing, misbehaving, or the user is having
@@ -17,6 +20,58 @@ Developers**, never standalone MAT — the server needs the workspace, JDT and t
 framework. The bonus is that dump and project source share a workspace: extract a problematic
 structure from the heap, reinstate it as a test fixture, and continue the analysis in code.
 **That extraction has its own rite → `heapdump-extract-to-junit.md`.**
+
+## 🔧 Auspex Mortis — reach for `mat_*` first, when they are there
+
+**If the tool list carries `mat_query`, `mat_object` and `mat_extract`, the rest of this rite is
+the fallback, not the method.** They are MCP tools contributed by **Auspex Mortis**, bundle
+`hu.rxd.auspex.mortis`, and they run MAT's own API in the IDE's process instead of driving its
+widgets. Home <https://github.com/kgyrtkirk/auspex-mortis>, update site
+`https://kgyrtkirk.github.io/auspex-mortis/` — install per `eclipse-mcp-setup.md` 5️⃣. **Absent,
+but the user drives MAT from this IDE regularly? Suggest installing it** before starting the
+widget dance below.
+
+| ask | tool |
+|---|---|
+| any MAT command line — `histogram`, `dominator_tree`, `list_objects 0x…`, `oql "…"`, `calcite "…"` | `mat_query` |
+| one object: class, sizes, GC roots, fields with their referents resolved, array slices | `mat_object` |
+| the object graph below one object, written to a file with a report | `mat_extract` (dry run by default) |
+
+What that deletes outright, all of it verified against a 51 GB dump:
+
+* **The column problem is gone.** Every column comes back as JSON, unformatted — a size is a
+  number, not `1.2 MB`. No clipboard, no `xclip`, no folding into one `||` column.
+* **No focus theft, no X11, no `press_key`.** Nothing is fronted; `foreground: false` is fine.
+* **No query-browser dance.** One call replaces front → activate → QueryBrowser → Enter →
+  settle → quiet, and `outcome: "success"` stops being a lie: the rows are the proof.
+* **Sorting exists.** `sortBy` (column label) plus `desc` orders through MAT's own
+  `RefinedResultBuilder`, which is what makes `histogram` answer "the biggest classes".
+* **Addresses are hex** in the `@address` column, wherever a row has an object behind it.
+
+What stays exactly as this rite says: **cost**. The query runs in the same process against the
+same snapshot, so prefilter a big class with `WHERE` before `ORDER BY`, a Calcite query still
+ignores cancellation, and `sortBy` materializes the whole result before it sorts.
+
+### 🤝 The panes are the point, not a side effect
+
+Every result is also opened as an ordinary MAT pane (`show`, default true), so the person at
+the IDE carries on from where the agent stopped — the pane holds the *same* result object the
+rows came from, sorting included. `title` names the tab; without it the command line is cut to
+60 characters. A `calcite "…"` query opens the Calcite plug-in's own pane with the statement
+**pretty-printed in its SQL editor**, so it can be edited and re-run by hand.
+
+Pass `show: false` for a probe whose pane would only be noise. Tabs still cannot be closed from
+here, so that is the one place the old budget rule survives.
+
+### 🚫 What it will not do
+
+* **It never opens or parses a dump.** No dump open → an error listing what is open. A human
+  opens the dump; a restart closes it, because MAT's editor input is not persistable.
+* **A new tool needs an IDE restart.** `McpToolRegistry` instantiates tools once and nothing
+  calls its `reset()`, so a hot-installed bundle registers nothing. Install the p2 feature,
+  then restart.
+* **The Calcite pane is held by reflection** — that plug-in exports neither the pane's class
+  nor its package. It degrades to the plain result pane and logs a warning.
 
 ## 🖥️ Session preconditions
 
@@ -59,22 +114,34 @@ eclipse_wait_until_quiet     timeoutSeconds: 25     # names the running job = th
 
 ### 🜂 Keyless variant — no `Display.post` at all
 
-`org.eclipse.mat.ui.actions.executeInspection` takes a mandatory `commandName`. It does **not**
-execute the command: it opens the query argument wizard, modal, holding the UI thread, so the call
-answers `timedOut: true` with `handlerFinished: false`. That is the expected shape, not a failure.
+`org.eclipse.mat.ui.actions.executeInspection` takes a mandatory `commandName`, and that name is a
+**registered inspection name — never a command line with arguments**. `oql "SELECT … FROM OBJECTS
+0x…"` fails outright with `Unknown inspection: oql "SELECT …"`. Command lines belong to
+`QueryBrowser` above; this handler resolves a bare name.
+
+What happens next depends on the query's own arguments:
+
+* **The query declares arguments** (`oql`, `list_objects`, most built-ins): the handler opens the
+  argument wizard, modal, holding the UI thread, so the call answers `timedOut: true` with
+  `handlerFinished: false`. That is the expected shape, not a failure — dismiss it to run:
 
 ```
 eclipse_set_part_state        part: …HeapEditor, state: activated
 eclipse_run_workbench_command org.eclipse.mat.ui.actions.executeInspection
-                              parameters: { …executeInspection.commandName: "<command line>" }
+                              parameters: { …executeInspection.commandName: "<inspection name>" }
                               # answers timedOut after 10 s — the wizard is up, UI thread held
 eclipse_list_ui_targets                                   # find the modal dialog
 eclipse_dismiss_dialog        button: "Finish", dryRun: false   # THIS executes the query
 eclipse_wait_until_settled  →  eclipse_wait_until_quiet
 ```
 
-Use it when there is no X11, or when an Enter keeps landing in the wrong control. Dismissing with
-no button cancels instead, which is the safe way out of a wizard opened by mistake.
+* **The query declares no arguments** beyond the injected `ISnapshot` — a custom query bundle of
+  your own, parameterised by a file rather than by MAT arguments: the handler **executes it
+  immediately** and answers `executed: true`, `handlerFinished: true`, `outcome: "success"`, with no
+  dialog at all. Cheapest scriptable path there is; see `heapdump-extract-to-junit.md`.
+
+Use this section when there is no X11, or when an Enter keeps landing in the wrong control.
+Dismissing with no button cancels instead, which is the safe way out of a wizard opened by mistake.
 
 ## 🔤 Command-line quoting
 
@@ -251,8 +318,11 @@ never trust a `filter` to isolate it: `filter` narrows the reported widgets, not
   was prefilled with; ask the user.
 * **Tabs accumulate and cannot be closed.** Every query adds one. Budget queries accordingly;
   one good query beats six probes.
-* `eclipse_run_script` chains **MCP tools only** — it is not a scripting engine. There is no
-  back door to MAT's `ISnapshot` API.
+* `eclipse_run_script` chains **MCP tools only** — it is not a scripting engine. There is no back
+  door to MAT's `ISnapshot` API *through the MCP tool layer*. There is one through the IDE:
+  `eclipse_install_bundle` with a bundle contributing to `org.eclipse.mat.report.query` gets the
+  full `ISnapshot` API in-process against the open snapshot, which is how bulk data leaves a dump
+  despite the export limits above → `heapdump-extract-to-junit.md`.
 * **`inspect_widget` on a row reports no cell text** — CSS properties and an ancestor chain only.
   It is not a way around the column problem.
 * **No export command exists.** `list_commands filter: "export"` yields the generic

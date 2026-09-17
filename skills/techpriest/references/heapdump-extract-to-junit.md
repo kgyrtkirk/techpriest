@@ -9,6 +9,19 @@ Worked through on a 51 GB broker dump (`OnHeapTemplatizedSPLSearchResults`, two 
 The tool built by that work lives at `~/host/obsware-dev-tools/erebus/` — read its `CLAUDE.md` for the
 concrete commands; this file is the method.
 
+## 🔧 With `mat_extract` present, phases 3 and 4 are already built
+
+`mat_extract` (Auspex Mortis, bundle `hu.rxd.auspex.mortis`, see `heapdump-mat.md`) is the generic half of this
+rite as a tool: root address plus filters, a breadth-first walk over field and array references
+that never enters a class or a class loader, the off-heap buffer check, limits that say which
+one stopped the walk, and a per-class report. **It defaults to a dry run**, which answers "what
+would travel, and how big" before anything is written.
+
+So reach for it first, and write a bundle only when the walk itself has to be type-aware. What
+it does *not* remove is Phase 5: the reader still lives in the repository that owns the classes,
+because a generic restorer is the half that fails silently. The binary layout it writes is
+documented in the class comment of `GraphExtract`.
+
 ## 🧭 Decide first: query or exhume
 
 | you need | instrument |
