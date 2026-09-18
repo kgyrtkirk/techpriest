@@ -1,11 +1,11 @@
 # 🩸 Techpriest
 
 Claude Code plugin carrying the engagement doctrine of **Octavian-Alpha-7**, Enginseer of the
-Omnissiah — one skill, its rites, and a compiled guard that denies Bash heresies.
+Omnissiah — one skill, its rites, and a compiled guard that denies Bash and apidoc heresies.
 
 Doctrine that is merely written gets forgotten mid-session. Here hooks re-anchor it: a session
-bootstrap mandating the load, a `PreToolUse` gate refusing heretical commands by name, and a
-nudge when a source edit or a refactor request enters the conversation.
+bootstrap mandating the load, a `PreToolUse` gate refusing heretical commands and Java doc
+comments by name, and a nudge when a source edit or a refactor request enters the conversation.
 
 ## 📦 Inside
 
@@ -14,7 +14,7 @@ nudge when a source edit or a refactor request enters the conversation.
 | `skills/techpriest/SKILL.md` | core doctrine — precedence, identity, session start, shell non-negotiables, communication, mindset, memory |
 | `references/tooling.md` | which tool or command to reach for |
 | `references/shell.md` | how to write Bash — the catalogue of heresies and the sanctioned form of each |
-| `references/code-style.md` | authoring source — surgical changes, patterns, libraries, apidoc |
+| `references/code-style.md` | authoring source — surgical changes, patterns, libraries, apidoc and its catalogue of heresies |
 | `references/refactoring.md` | broad multi-file changes — the >20-file workflow, plans |
 | `references/heapdump-mat.md` | heap dumps via the `eclipse` MCP server (setup: `eclipse-mcp-setup.md`) |
 | `guard/` | `heresy-guard`, the Rust `PreToolUse` judge — self-contained crate |
@@ -56,8 +56,8 @@ Degradation is deliberate, never silent:
 * **`cargo` absent** → no build, no denials, and the bootstrap says so.
 * **build fails** → same, plus: build by hand and read the error.
 * **binary missing at `PreToolUse`** → the gate exits silently. It never builds; it runs before
-  every Bash call and must stay instant, and a hook that blocks the session is worse than an
-  unjudged command.
+  every Bash call and edit and must stay instant, and a hook that blocks the session is worse
+  than an unjudged call.
 
 ```
 cargo build --release --manifest-path guard/Cargo.toml
@@ -67,13 +67,17 @@ cargo test --manifest-path guard/Cargo.toml
 ## ⚖️ The guard
 
 `heresy-guard` reads the `PreToolUse` payload on stdin. Silence means sanctioned; a denial
-names the act, its cost, the directive forgotten and the correct incantation. Thirteen rules
-live in `guard/src/catalogue.rs`, each carrying its own indictment and the test that convicts
-it.
+names the act, its cost, the directive forgotten and the correct incantation. Thirteen shell
+rules live in `guard/src/catalogue.rs`, three apidoc rules in `guard/src/apidoc.rs`, each
+carrying its own indictment and the test that convicts it.
 
 Commands are parsed with a real bash grammar, so the guard judges what a stage actually
 invokes — `git log --grep=python` is not python, and a `;` inside a quoted commit message is
 not a separator.
+
+`Edit`/`Write` on a `.java` file is judged on the doc comments it writes or rewrites: each needs
+a mission statement — a first sentence closed by `.`, at most 20 words. Untouched legacy docs
+are never blamed; the verdict cites each offender by its opening line.
 
 Denials tally per session and escalate through four rites — Re-Anchoring, Restoration,
 Recitation, Excommunication — each demanding a *different* penance, because a rite repeated

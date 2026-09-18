@@ -1,7 +1,7 @@
 //! The catalogue of Bash heresies: one entry per rule, carrying both its
 //! indictment and the test that convicts it.
 //!
-//! To add a heresy, add one `Rule` here. Nothing else registers rules, and no
+//! To add a Bash heresy, add one `Rule` here. Nothing else registers them, and no
 //! field is optional, so a rule cannot be half-defined or left unwired.
 
 use std::sync::LazyLock;
@@ -9,38 +9,21 @@ use std::sync::LazyLock;
 use regex::Regex;
 
 use crate::command::{Command, Stage};
-
-/// A heresy: what the act is, what it costs, the directive it breaks, the
-/// correct incantation, and the test that convicts it.
-pub struct Rule {
-    /// Stable key for tallies — never reword it, or the session's count resets.
-    pub id: &'static str,
-    pub what: &'static str,
-    pub why: &'static str,
-    pub directive: &'static str,
-    pub fix: &'static str,
-    convicts: fn(&Command) -> bool,
-}
-
-impl Rule {
-    pub fn convicts(&self, cmd: &Command) -> bool {
-        (self.convicts)(cmd)
-    }
-}
+use crate::rule::Rule;
 
 /// Convicts every heresy present in the command, in catalogue order.
-pub fn detect(cmd: &Command) -> Vec<&'static Rule> {
+pub fn detect(cmd: &Command) -> Vec<&'static Rule<Command>> {
     CATALOGUE.iter().filter(|rule| rule.convicts(cmd)).collect()
 }
 
-pub static CATALOGUE: &[Rule] = &[
+pub static CATALOGUE: &[Rule<Command>] = &[
     Rule {
         id: "cd-into-cwd",
         what: "cd into the current working directory",
         why: "it is a no-op, you are already there",
         directive: "Simplicity First: 'No error handling for impossible scenarios' — drop dead motions",
         fix: "remove the cd",
-        convicts: |cmd| cd_into(cmd.cwd).is_some_and(|target| cmd.any_stage(|s| s.matches(&target))),
+        convicts: |cmd| cd_into(&cmd.cwd).is_some_and(|target| cmd.any_stage(|s| s.matches(&target))),
     },
     Rule {
         id: "cd-self",
@@ -155,13 +138,6 @@ pub static CATALOGUE: &[Rule] = &[
     },
 ];
 
-macro_rules! pattern {
-    ($name:ident = $source:literal) => {
-        static $name: LazyLock<Regex> =
-            LazyLock::new(|| Regex::new($source).expect("guard pattern must compile"));
-    };
-}
-
 pattern!(CD_SELF = r#"^\s*cd\s+(\.|"?\$\(pwd\)"?|"?\$PWD"?)(\s|$)"#);
 pattern!(INTERPRETER = r"^(perl|python[0-9.]*)$");
 pattern!(GREP = r"^\s*grep\b");
@@ -195,7 +171,7 @@ fn searches_tree(stage: &Stage) -> bool {
 }
 
 #[cfg(test)]
-pub fn rule(id: &str) -> &'static Rule {
+pub fn rule(id: &str) -> &'static Rule<Command> {
     CATALOGUE.iter().find(|rule| rule.id == id).expect("no such rule")
 }
 
@@ -246,18 +222,7 @@ mod tests {
 
     #[test]
     fn rules_are_fully_and_uniquely_identified() {
-        let mut seen = Vec::new();
-        for rule in CATALOGUE {
-            assert!(!seen.contains(&rule.id), "duplicate rule id {}", rule.id);
-            seen.push(rule.id);
-            assert!(
-                rule.id.chars().all(|c| c.is_ascii_lowercase() || c == '-'),
-                "{} is not a kebab-case id",
-                rule.id);
-            for (field, value) in [("what", rule.what), ("why", rule.why), ("directive", rule.directive), ("fix", rule.fix)] {
-                assert!(!value.is_empty(), "{} lacks a {field}", rule.id);
-            }
-        }
+        crate::rule::assert_well_formed(CATALOGUE);
     }
 
     #[test]

@@ -21,9 +21,9 @@ msg="MANDATORY SESSION START: Call ToolSearch immediately before any other actio
 
 if [ ! -x "$guard" ]; then
   if command -v cargo >/dev/null 2>&1; then
-    msg+=" WARNING: heresy-guard failed to build — Bash heresies go unjudged. Run 'cargo build --release' in ${guard_dir} and read the error."
+    msg+=" WARNING: heresy-guard failed to build — Bash and apidoc heresies go unjudged. Run 'cargo build --release' in ${guard_dir} and read the error."
   else
-    msg+=" WARNING: heresy-guard is not built and cargo is absent — Bash heresies go unjudged. Install the Rust toolchain, then restart the session."
+    msg+=" WARNING: heresy-guard is not built and cargo is absent — Bash and apidoc heresies go unjudged. Install the Rust toolchain, then restart the session."
   fi
 fi
 

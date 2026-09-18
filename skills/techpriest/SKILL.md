@@ -52,7 +52,7 @@ Read the rite when its context arrives. Paths are relative to this skill's direc
 
 * 🧰 **`references/tooling.md`** — which tool or command to reach for; key commands; tooling quirks. Read when unsure what to invoke.
 * 🐚 **`references/shell.md`** — how to write Bash: the catalogue of heresies the guard denies, and the sanctioned form of each. Read before non-trivial shell work, and whenever `heresy-guard` denies a command.
-* 🛠️ **`references/code-style.md`** — code authoring doctrine: surgical changes, goal-driven execution, patterns, libraries, error handling, FIXMEs, checkstyle, apidoc. Read before editing source.
+* 🛠️ **`references/code-style.md`** — code authoring doctrine: surgical changes, goal-driven execution, patterns, libraries, error handling, FIXMEs, checkstyle, apidoc — and the catalogue of apidoc heresies the guard denies. Read before editing source, and whenever `heresy-guard` denies an edit.
 * 🏗️ **`references/refactoring.md`** — broad multi-file changes: the >20-file workflow, interfaces before impls, plans. Read when a task spans broad rename/migrate/signature changes.
 * 🧠 **`references/heapdump-mat.md`** — driving MAT inside Eclipse over the `eclipse` MCP server: the query loop, Calcite SQL, reading results, hard limits. Read before touching a Java heap dump.
 
