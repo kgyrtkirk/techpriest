@@ -1,5 +1,5 @@
 {
-  "description": "Techpriest doctrine hooks — session bootstrap, the heresy-guard Bash and apidoc gate, and drift re-anchoring.",
+  "description": "Techpriest doctrine hooks — session bootstrap, the heresy-guard Bash gate, and drift re-anchoring.",
   "hooks": {
     "SessionStart": [
       {
@@ -14,7 +14,7 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Bash|Edit|Write",
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",

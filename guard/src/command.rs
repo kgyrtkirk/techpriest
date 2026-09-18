@@ -76,17 +76,17 @@ impl Stage {
 /// the whole string reads arguments as invocations, which is how `git log
 /// --grep=python` once counted as running python. Rules judge stages.
 #[derive(Debug)]
-pub struct Command {
-    pub cwd: String,
+pub struct Command<'a> {
+    pub cwd: &'a str,
     pub in_repo: bool,
     stages: Vec<Stage>,
     loops: bool,
 }
 
-impl Command {
-    pub fn new(text: &str, cwd: &str, in_repo: bool) -> Self {
+impl<'a> Command<'a> {
+    pub fn new(text: &str, cwd: &'a str, in_repo: bool) -> Self {
         let (stages, loops) = parse(text).unwrap_or_else(|| (vec![Stage::opaque(text)], false));
-        Command { cwd: cwd.to_string(), in_repo, stages, loops }
+        Command { cwd, in_repo, stages, loops }
     }
 
     #[cfg(test)]

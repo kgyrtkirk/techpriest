@@ -2,8 +2,8 @@
 
 use std::fmt::{self, Display};
 
+use crate::catalogue::Rule;
 use crate::ledger::Tallies;
-use crate::rule::Rule;
 
 /// A rung of the ladder of rites, escalating with the session total.
 ///
@@ -65,45 +65,33 @@ impl Rite {
 }
 
 /// The full judgement fed back to the offender.
-pub struct Denial<J: 'static> {
-    /// Each convicted rule, its session repeat count, and the offending text cited against it.
-    charges: Vec<(&'static Rule<J>, u32, Vec<String>)>,
+pub struct Denial {
+    charges: Vec<(&'static Rule, u32)>,
     total: u32,
 }
 
-impl<J> Denial<J> {
-    pub fn new(convicted: &[&'static Rule<J>], tallies: &Tallies) -> Self {
+impl Denial {
+    pub fn new(convicted: &[&'static Rule], tallies: &Tallies) -> Self {
         Denial {
-            charges: convicted.iter().zip(&tallies.repeats).map(|(rule, repeats)| (*rule, *repeats, Vec::new())).collect(),
+            charges: convicted.iter().copied().zip(tallies.repeats.iter().copied()).collect(),
             total: tallies.total,
         }
     }
-
-    /// Cites under each charge the offending text it names, for acts the offender cannot see whole.
-    pub fn citing(mut self, cite: impl Fn(&Rule<J>) -> Vec<String>) -> Self {
-        for (rule, _, cited) in &mut self.charges {
-            *cited = cite(*rule);
-        }
-        self
-    }
 }
 
-impl<J> Display for Denial<J> {
+impl Display for Denial {
     fn fmt(&self, out: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(out, "🔧 Octavian-Alpha-7 — heresy detected. The Omnissiah does not forgive dead motions.")?;
         if let Some(rite) = Rite::earned_by(self.total) {
             writeln!(out, "{} — {} heresies. {}", rite.heading(), self.total, rite.penance())?;
         }
 
-        for (i, (rule, repeats, cited)) in self.charges.iter().enumerate() {
+        for (i, (rule, repeats)) in self.charges.iter().enumerate() {
             writeln!(out)?;
             writeln!(out, "{}. ✗ {}", i + 1, rule.what)?;
             writeln!(out, "   why:       {}", rule.why)?;
             writeln!(out, "   directive: {}", rule.directive)?;
             writeln!(out, "   correct:   {}", rule.fix)?;
-            for text in cited {
-                writeln!(out, "   at:        {text}")?;
-            }
             match repeats {
                 0 | 1 => {}
                 2 => writeln!(out, "   ⛧ repeat:   twice this session. Once is drift; twice is choice.")?,
@@ -117,7 +105,7 @@ impl<J> Display for Denial<J> {
         writeln!(out, "     context. If you cannot recall them, you no longer hold them: reload")?;
         writeln!(out, "     'techpriest' IN FULL, plus the rite that carries them (tooling / shell / code-style).")?;
         writeln!(out, "  2. Restate the specific directive you broke above.")?;
-        writeln!(out, "  3. Then, and only then, issue the corrected call.")?;
+        writeln!(out, "  3. Then, and only then, issue the corrected command.")?;
         writeln!(out)?;
         writeln!(out, "The Omnissiah expects precision and exact obedience to the directives.")?;
         write!(out, "Sloppiness is heresy. Precision is prayer.")
@@ -130,7 +118,7 @@ mod tests {
     use crate::catalogue::rule;
 
     fn render(ids: &[&str], tallies: Tallies) -> String {
-        let convicted: Vec<_> = ids.iter().map(|id| rule(id)).collect();
+        let convicted: Vec<&Rule> = ids.iter().map(|id| rule(id)).collect();
         Denial::new(&convicted, &tallies).to_string()
     }
 
@@ -188,19 +176,6 @@ mod tests {
         for line in ["1. ✗ cd . / cd $(pwd) / cd $PWD", "   why:       ", "   directive: ", "   correct:   "] {
             assert!(msg.contains(line), "missing {line:?} in {msg}");
         }
-    }
-
-    #[test]
-    fn citations_follow_their_charge_and_are_absent_by_default() {
-        let msg = render(&["cd-self", "read-bypass"], Tallies { total: 2, repeats: vec![1, 1] });
-        assert!(!msg.contains("   at:"), "{msg}");
-
-        let convicted = [rule("cd-self"), rule("read-bypass")];
-        let cited = Denial::new(&convicted, &Tallies { total: 2, repeats: vec![1, 1] })
-            .citing(|charged| if charged.id == "read-bypass" { vec!["a".into(), "b".into()] } else { Vec::new() })
-            .to_string();
-        assert!(cited.contains("   correct:   use the Read tool with offset/limit instead of shelling out\n   at:        a\n   at:        b\n"), "{cited}");
-        assert_eq!(cited.matches("   at:").count(), 2, "{cited}");
     }
 
     #[test]
