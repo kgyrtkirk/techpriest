@@ -17,6 +17,7 @@ nudge when a source edit or a refactor request enters the conversation.
 | `references/code-style.md` | authoring source — surgical changes, patterns, libraries, apidoc |
 | `references/refactoring.md` | broad multi-file changes — the >20-file workflow, plans |
 | `references/heapdump-mat.md` | heap dumps via the `eclipse` MCP server (setup: `eclipse-mcp-setup.md`) |
+| `bin/git-updiff` | `git updiff` — the current branch's net change against the fork point it elects |
 | `guard/` | `heresy-guard`, the Rust `PreToolUse` judge — self-contained crate |
 | `hooks/` | `hooks.json` plus the bootstrap, guard and re-anchor scripts |
 | `examples/CLAUDE.md` | the user-level mandate an adopter copies |
@@ -41,6 +42,30 @@ skill is available but not mandated, and nothing forces the load before the firs
 
 A user skill of the same name shadows the plugin's — delete any loose
 `~/.claude/skills/techpriest` before installing.
+
+## 🧭 `git updiff`
+
+Microcommits fragment a change across dozens of half-states, so per-commit views show churn
+instead of the change. `git updiff` diffs against the commit the branch forked from, which is
+invariant under rebase, amend, reorder and squash, and it takes every `git diff` argument.
+
+The fork point is **elected, not assumed** — it reduces each candidate upstream to
+`merge-base(HEAD, candidate)` and keeps the bases unreachable from another base, so the
+tightest lineage wins. Work across several upstreams of one repo, listed most-specific first:
+
+```
+git config --add techpriest.upstream implydata/iow
+git config --add techpriest.upstream implydata/master
+git config --add techpriest.upstream apache/master
+```
+
+With nothing configured it falls back to `@{upstream}`, then each remote's `HEAD`/`main`/
+`master`. `git updiff --why` shows every candidate and which one won — reach for it whenever a
+diff looks far too wide.
+
+Claude Code puts the plugin's `bin/` on the Bash tool's `PATH`, so this needs no setup inside a
+session. Your own shell is **not** touched: if you want `git updiff` in your terminal too, add
+that directory to your `PATH` yourself. That is deliberately left as your decision.
 
 ## 🔨 The guard builds itself
 

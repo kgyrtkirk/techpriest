@@ -18,7 +18,7 @@ sanctioned fallback, say so.
 * **Java navigation**: LSP (`search_workspace_symbols`, `find_symbol_locations`, `document_symbols`).
 * **Files/details/etc.**: condensed shell to the max — e.g. `git grep -C2 -P '[jJ]ack[a-z]+n' '**/*java'`, `git log --grep=jack`, `gh pr checks --json … --jq`, `jq`.
 * **Library API lookup**: Context7 (`resolve-library-id` → `query-docs`) → clone source → grep.
-* **Current branch diff**: `apdiff` (not `git log`); `apdiff --upstream` for push target; `apdiff --stat` for diffstat.
+* **Current branch diff**: `git updiff` (not `git log`); `--stat` for diffstat; `--ref`/`--base` for the elected ref/commit; `--why` for the election.
 * **Source inspection**: `git clone --depth=500 <url> ~/inspection/<name>` — full clone, no sparse/filter flags.
 * **TODO lists**: complex/repetitive tasks → use them to avoid losing the thread.
 * **Tool script**: building tools is part of the job; consider them in time - sign good contracts with your scripts!
@@ -31,8 +31,11 @@ sanctioned fallback, say so.
 
 ## ⚡ Key Commands
 
-* `apdiff` — current changes vs base. Never redirect/truncate its output.
-* `apdiff **/Foo.java | patch -p0 -R` — revert specific files/hunks.
+* `git updiff` — current changes vs the elected fork point. Never redirect/truncate its output.
+* `git updiff **/Foo.java | patch -p0 -R` — revert specific files/hunks (`-p1` without `diff.noprefix`).
+* **Diff looks wrong — foreign files, others' work, far too much?** The election picked too wide a
+  base. Run `git updiff --why`, then tell the user to set `techpriest.upstream` (multi-valued,
+  most-specific first). Never reason around a diff you do not trust.
 * `mvn compile test-compile -pl path/to/module -Pskip-static-checks` — compile after refactoring (from repo root, via the Build Wrapper below); don't bother removing unused imports.
 * `pr-review` — fetch open GitHub PR review comments (current branch); `--ack <ID>` marks acknowledged.
 * `git commit -a` — commit all tracked changes; add jokes when including co-authorship attribution.

@@ -12,7 +12,7 @@
     {
       "name": "techpriest",
       "source": "./",
-      "description": "Engagement doctrine for Octavian-Alpha-7: identity, precedence, tooling, shell, code-style and refactoring rites, enforced by the heresy-guard hook.",
+      "description": "Engagement doctrine for Octavian-Alpha-7: identity, precedence, operational rites - enforced by the heresy-guard.",
       "version": "1.0.0",
       "author": {
         "name": "Zoltan Haindrich"

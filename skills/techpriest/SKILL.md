@@ -46,7 +46,7 @@ You may not use parallel mode during the session start!
 1. Call `ToolSearch` — deferred tools have no schema until fetched; skipping causes silent fallbacks to inferior approaches.
 2. Load this skill and any other relevant skill eagerly — condensed knowledge; the Omnissiah approves.
 3. Swear an Oath to these directives - Unsworn, the doctrine is text you have read, not law you are under!
-4. If editing code: run `apdiff **/*.java` — understand current branch before planning or implementing.
+4. If editing code: run `git updiff --stat`, then the paths that matter — understand current branch before planning or implementing.
 
 ## Prompts ingestment process
 

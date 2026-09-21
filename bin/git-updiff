@@ -1,0 +1,88 @@
+#!/bin/bash
+# git-updiff — diff the current branch against the commit it forked from.
+#
+# Microcommits fragment a change across dozens of half-states, so per-commit views
+# show churn rather than the change. The merge-base diff collapses them into net
+# effect and survives rebase, amend, reorder and squash.
+#
+# The fork point is elected, never assumed: every candidate upstream is reduced to
+# merge-base(HEAD, candidate), and the bases unreachable from another base win, so
+# the tightest lineage is chosen. Candidates come from the first rung that yields any:
+#
+#   1. branch.<name>.techpriestUpstream
+#   2. techpriest.upstream          — multi-valued, listed in priority order:
+#          git config --add techpriest.upstream implydata/iow
+#          git config --add techpriest.upstream implydata/master
+#          git config --add techpriest.upstream apache/master
+#   3. @{upstream}, then every remote HEAD / main / master
+#
+# A diff carrying work that is plainly not yours means the election picked too wide
+# a base. Run --why and fix rung 2; do not read around it.
+#
+#   --ref  print the elected ref    --base  print the elected commit
+#   --why  show the election        everything else goes to git diff
+
+set -euo pipefail
+
+mode=diff
+case "${1:-}" in
+  --ref)  mode=ref;  shift ;;
+  --base) mode=base; shift ;;
+  --why)  mode=why;  shift ;;
+esac
+
+candidates() {
+  local branch
+  branch=$(git symbolic-ref --quiet --short HEAD) || branch=
+  [ -n "$branch" ] && git config --get-all "branch.$branch.techpriestUpstream" && return
+  git config --get-all techpriest.upstream && return
+  git rev-parse --abbrev-ref '@{upstream}' 2>/dev/null || true
+  git for-each-ref --format='%(refname:short)' \
+    'refs/remotes/*/HEAD' 'refs/remotes/*/main' 'refs/remotes/*/master'
+}
+
+# base <TAB> ref, in candidate priority order; unresolvable candidates drop out
+table=$(
+  while read -r ref; do
+    base=$(git merge-base HEAD "$ref" 2>/dev/null) || continue
+    printf '%s\t%s\n' "$base" "$ref"
+  done < <(candidates | awk '!seen[$0]++')
+)
+
+[ -n "$table" ] || {
+  echo "git-updiff: no candidate upstream resolved against HEAD." >&2
+  echo "  set one: git config --add techpriest.upstream <ref>" >&2
+  exit 1
+}
+
+survivors=$(cut -f1 <<<"$table" | sort -u | xargs git merge-base --independent)
+
+if [ "$(wc -l <<<"$survivors")" -gt 1 ]; then
+  echo "git-updiff: lineages are incomparable; falling back to candidate order." >&2
+  awk 'NR==FNR{s[$1];next} $1 in s{print "  candidate: "$2" @ "substr($1,1,12)}' \
+    <(printf '%s\n' "$survivors") <(printf '%s\n' "$table") >&2
+  echo "  pin one: git config branch.<name>.techpriestUpstream <ref>" >&2
+fi
+
+hit=$(awk -v OFS='\t' 'NR==FNR{s[$1];next} $1 in s{print FNR,$0;exit}' \
+  <(printf '%s\n' "$survivors") <(printf '%s\n' "$table"))
+row=${hit%%$'\t'*}
+elected=${hit#*$'\t'}
+base=$(cut -f1 <<<"$elected")
+
+case "$mode" in
+  base) echo "$base" ;;
+  ref)  cut -f2 <<<"$elected" ;;
+  diff) exec git diff "$base" "$@" ;;
+  why)
+    n=0
+    while IFS=$'\t' read -r b ref; do
+      n=$((n + 1)); mark=' '
+      [ "$n" = "$row" ] && mark='*'
+      printf '%s %-24s %s  mine:%-4s drift:%s\n' "$mark" "$ref" \
+        "$(git rev-parse --short "$b")" \
+        "$(git rev-list --count "$b"..HEAD)" \
+        "$(git rev-list --count "$b".."$ref")"
+    done <<<"$table"
+    ;;
+esac

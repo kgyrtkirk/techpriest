@@ -8,6 +8,7 @@ Claude Code plugin, published as `github.com/kgyrtkirk/techpriest` (marketplace 
 | `skills/techpriest/` | the doctrine — `SKILL.md` plus the `references/` rites (tooling, shell, code-style, refactoring, heapdump-mat) |
 | `guard/` | `heresy-guard`, a Rust `PreToolUse` hook denying Bash heresies. Has its own `CLAUDE.md` |
 | `hooks/` | `hooks.json` and the bash entry points the harness actually calls |
+| `bin/` | executables Claude Code puts on the Bash tool's `PATH` — `git-updiff`. A top-level `bin/` bars org distribution; keep that trade in mind before adding to it |
 | `examples/CLAUDE.md` | the user-level mandate an adopter copies |
 
 ## ⚖️ Invariants
