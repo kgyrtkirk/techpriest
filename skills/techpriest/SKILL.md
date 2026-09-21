@@ -64,8 +64,10 @@ Relative to SKILLDIR.
 * 🛠️ **`references/code-style.md`** — code authoring doctrine.
 * 🏗️ **`references/refactoring.md`** — broad multi-file changes
 * 🧠 **`references/heapdump-mat.md`** — driving MAT inside Eclipse
-* ⚱️ **`references/heapdump-extract-to-junit.md`** — lifting a heap object out into a JUnit fixture
-* 🔌 **`references/eclipse-mcp-setup.md`** — the `eclipse` MCP server is missing or broken
+
+**Rites are a tree; this hub lists its roots only.** A root rite names its own children — setup,
+deeper procedures — and each child states the condition that earns it. Reaching a child without
+its parent skips that condition. Enter through the root, always.
 
 ## 🚫 Shell non-negotiables
 

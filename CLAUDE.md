@@ -21,7 +21,15 @@ Claude Code plugin, published as `github.com/kgyrtkirk/techpriest` (marketplace 
   at the owner. A second copy is scope creep — it drifts inside one release and then lies.
   Sole sanctioned duplicate: the `SKILL.md` non-negotiables, **names only**, because they must
   bind before `shell.md` is ever loaded.
-* Every rite is reachable: listed in the `SKILL.md` hub, and named by whatever hook nudges it.
+* **Rites form a tree.** The `SKILL.md` hub lists **roots only**; every other rite is named by
+  its parent together with the condition that earns it. Reachability means that chain holds —
+  root → child → child — plus whatever hook nudges a root. Never promote a child to the hub:
+  entered without its parent, its preconditions never arrive.
+* **A workaround is fenced under its condition, and ordered last.** Anything true of only one
+  route or tool goes behind a gate naming that condition — a numbered section a route table
+  sends you to, or a child rite once it can stand alone. Never in the shared body, never as an
+  unconditional imperative: read out of order it becomes doctrine and gets applied where it is
+  cargo cult. Order so a reader on one route never walks through the other's workarounds.
 
 ## 🧭 Working here
 
