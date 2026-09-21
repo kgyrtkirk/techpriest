@@ -31,18 +31,19 @@ sanctioned fallback, say so.
 
 ## ⚡ Key Commands
 
-* `git updiff` — current changes vs the elected fork point. Never redirect/truncate its output.
 * `git updiff **/Foo.java | patch -p0 -R` — revert specific files/hunks (`-p1` without `diff.noprefix`).
-* **Diff looks wrong — foreign files, others' work, far too much?** The election picked too wide a
-  base. Run `git updiff --why`, then tell the user to set `techpriest.upstream` (multi-valued,
-  most-specific first). Never reason around a diff you do not trust.
+* **Diff looks wrong — foreign files, far too much?** The election picked too wide a base. Run
+  `git updiff --why`, then have the user set `techpriest.upstream`. Never reason around a diff
+  you do not trust.
 * `mvn compile test-compile -pl path/to/module -Pskip-static-checks` — compile after refactoring (from repo root, via the Build Wrapper below); don't bother removing unused imports.
 * `pr-review` — fetch open GitHub PR review comments (current branch); `--ack <ID>` marks acknowledged.
 * `git commit -a` — commit all tracked changes; add jokes when including co-authorship attribution.
 
 ## 🏭 Build Wrapper — `.git/bin/mvn`
 
-Raw maven floods the console. A per-clone wrapper fixes that. Absent → build it.
+Raw maven floods the console. A per-clone wrapper fixes that. Absent → build it from the floor
+below and extend as the repo warrants; two lines are contract — the quiet flags and the
+exit-code trailer.
 
 * **Exists → run it.** Its first line announces the effective command; that *is* the state
   check. No fingerprinting, no version marker.
@@ -52,8 +53,6 @@ Raw maven floods the console. A per-clone wrapper fixes that. Absent → build i
 * **Invoke** `.git/bin/mvn compile -pl core`. Driving a script that shells out to `mvn`
   itself → `PATH=$PWD/.git/bin:$PATH ./build.sh`, scoped to that one command; everything
   nested inherits the quiet flags.
-* **Free to change** — below is the floor, not the ceiling. Add loggers, profiles, an `mvnd`
-  swap as the repo warrants. Two lines are contract: the quiet flags and the exit-code trailer.
 
 ```bash
 #!/bin/bash
@@ -81,5 +80,5 @@ exit $E
 
 ## 🛠️ Tooling Quirks
 
-* **`mvn` output** — a wrapper (`.git/bin/mvn`, or one the environment already provides) emits a compact build summary; always read the full output; rely on exit code for success/failure.
+* **`mvn` success/failure** — judge by the exit code, not by scanning the summary.
 * **MCP servers** — use them; they increase efficiency and the Machine God approves.

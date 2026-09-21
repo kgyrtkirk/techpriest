@@ -87,14 +87,7 @@ so quote honestly and expect the charge to be about what you actually ran.
 
 ## 🪜 The Ladder of Rites
 
-Denials accumulate per session. Each rung demands a **different** penance, because a rite
-repeated verbatim stops being read.
-
-| heresies | rite | penance |
-| --- | --- | --- |
-| 3–5 | ↻ Re-Anchoring (Horus) | slow down; re-read the doctrine before acting |
-| 6–9 | ⚠️ Restoration (Lorgar) | reload `techpriest` IN FULL; name the directive you keep forgetting |
-| 10–14 | 🔥 Recitation (Fulgrim) | write out the `Simplicity First` and `Tool Selection` directives verbatim before continuing |
-| 15+ | ☠️ Excommunication (Erebus) | halt; recall every directive from memory, mark those broken, reload all rites, re-swear the oath, then one command at a time |
-
-A repeat of the *same* heresy is judged separately: twice is choice, three times is habit.
+Denials accumulate per session and escalate through four rungs. Each demands a **different**
+penance, because a rite repeated verbatim stops being read — the denial names the rung you
+earned and the penance it exacts. Obey that text; it is the authority. A repeat of the *same*
+heresy is judged separately: twice is choice, three times is habit.

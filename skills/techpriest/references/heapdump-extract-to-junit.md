@@ -5,22 +5,16 @@ Companion to `heapdump-mat.md`. That rite **answers questions** about a dump thr
 a debugger. Read it when "why is this thing 56 MB" stops being answerable by queries and starts needing
 experiments.
 
-Worked through on a 51 GB broker dump (`OnHeapTemplatizedSPLSearchResults`, two instances, ~30 MB each).
-The tool built by that work lives at `~/host/obsware-dev-tools/erebus/` — read its `CLAUDE.md` for the
-concrete commands; this file is the method.
-
 ## 🔧 With `mat_extract` present, phases 3 and 4 are already built
 
-`mat_extract` (Auspex Mortis, bundle `hu.rxd.auspex.mortis`, see `heapdump-mat.md`) is the generic half of this
-rite as a tool: root address plus filters, a breadth-first walk over field and array references
-that never enters a class or a class loader, the off-heap buffer check, limits that say which
-one stopped the walk, and a per-class report. **It defaults to a dry run**, which answers "what
-would travel, and how big" before anything is written.
+`mat_extract` (see `heapdump-mat.md`) is the generic half of this rite as a tool: root address plus
+filters, a breadth-first walk over field and array references that never enters a class or a class
+loader, the off-heap buffer check, limits that say which one stopped the walk, and a per-class report.
+**It defaults to a dry run**, which answers "what would travel, and how big" before anything is written.
 
-So reach for it first, and write a bundle only when the walk itself has to be type-aware. What
-it does *not* remove is Phase 5: the reader still lives in the repository that owns the classes,
-because a generic restorer is the half that fails silently. The binary layout it writes is
-documented in the class comment of `GraphExtract`.
+So reach for it first, and write a bundle only when the walk itself has to be type-aware. What it does
+*not* remove is Phase 5: the reader still lives in the repository that owns the classes, because a generic
+restorer is the half that fails silently.
 
 ## 🧭 Decide first: query or exhume
 
@@ -37,8 +31,7 @@ when you will run many experiments against the same data.
 
 * MAT's parser resolves its extensions through the Eclipse extension registry, so `SnapshotFactory` from a plain
   `java -cp` program is a dead end. OSGi or nothing.
-* The IDE **already holds the dump open with indices built** — a query runs against that snapshot, no second parse
-  of 51 GB.
+* The IDE **already holds the dump open with indices built** — a query runs against that snapshot, no second parse.
 * `eclipse_run_script` chains MCP tools only; it is not a scripting engine. **A custom query bundle is the back
   door to `ISnapshot`** that the MAT rite correctly says does not exist at the MCP layer — you get the full API,
   in-process, against the open snapshot.
@@ -63,16 +56,16 @@ Three buckets. Getting this wrong is what makes an extract wrong rather than mer
 | 🟡 **rebuildable cache** | lazily built reverse-lookup maps, materialized entry arrays | **skip** — they regenerate on first use, and they are often the biggest thing in the dump |
 | 🔴 **unrecoverable** | direct/mapped `ByteBuffer`s, native handles, sockets, threads, locks, lambdas, per-request context | cannot travel — **fail loudly** or document the substitute |
 
-In the worked case the 🟡 bucket was a `lookup` cache of 138,026 entries costing **12.7 MB** — more than the
-7.2 MB of dictionary bytes it indexes. Skipping it shrank the extract and changed nothing about correctness.
+A 🟡 cache routinely outweighs the data it indexes. Skipping it shrinks the extract and changes nothing about
+correctness — so measure the buckets before believing the retained figure.
 
 ## 🏗️ Phase 3 — the extractor bundle
 
 Shape that works, in ~200 lines:
 
 ```java
-@CommandName("erebus")
-public class ErebusExtractQuery implements IQuery
+@CommandName("exhume")
+public class ExhumeQuery implements IQuery
 {
   @Argument public ISnapshot snapshot;          // MAT injects the open snapshot
   public IResult execute(IProgressListener l) { … return new TextResult(report); }
@@ -92,8 +85,7 @@ Put `address=0x…` and `out=…` in a properties file the query reads on every 
 
 * **A query with no arguments beyond `ISnapshot` executes immediately — no wizard, no dialog.** (The wizard dance
   in `heapdump-mat.md` applies to queries that *declare* arguments; this sidesteps it entirely.)
-* Retargeting to another address is then a one-line file edit — no rebuild, no reinstall. The worked case did
-  exactly that for its second instance.
+* Retargeting to another address is then a one-line file edit — no rebuild, no reinstall.
 
 ### ⚠️ Bundle traps, each paid for in lost turns
 
@@ -140,7 +132,7 @@ The reader belongs with the classes it rebuilds, so it compiles against their re
   do not reach for `Unsafe` to dodge it.
 * Restore what travelled; **document what did not** (headers, request context, bundle references) in the class
   javadoc. Anything driven by the missing state is not evidence about the dumped run.
-* Default the extract path through a system property (`-Derebus.extract=…`) so a second instance needs no edit.
+* Default the extract path through a system property so a second instance needs no edit.
 * Guard the test with `Assumptions.assumeTrue(Files.exists(...))` — skipped without the extract, so CI stays green
   while the fixture stays in the repo.
 * The test's job is to restore and **log the size breakdown**; assertions stay minimal. It is a harness, not a
@@ -148,28 +140,14 @@ The reader belongs with the classes it rebuilds, so it compiles against their re
 
 ## ✅ Phase 6 — verify before believing
 
-Cross-check the restored object against the dump report, the same way the MAT rite demands two independent routes.
-Dictionary sizes computed from the restored object must match the extracted byte counts; row counts must match
-`tsList` length. A skipped test that *looks* green is the failure mode to watch for — confirm `Skipped: 0`.
-
-Worked example, two instances from the same dump:
-
-| | `0x40682d32150` | `0x406acdd1710` |
-|---|---|---|
-| rows | 9,982 (2,047,188 ints) | 9,983 (1,813,468 ints) |
-| bundle retained | 43.7 MB | 44.9 MB |
-| shared payload slab | 28.5 MB, **19.7 MB addressed** | 31.6 MB, **23.7 MB addressed** |
-| `lookup` cache (skipped) | 14.6 MB | 12.7 MB |
-| extract on disk | 28.5 MB | 31.7 MB |
-
-The pattern the numbers exposed: all dictionaries are windows into **one shared slab**, keeping ~8 MB alive that no
-window reaches, plus a lazy cache larger than the data it indexes. Neither fact is visible from a histogram.
+Cross-check the restored object against the dump report, the same way the MAT rite demands two independent routes:
+sizes computed from the restored object must match the extracted byte counts, row counts must match the source
+lengths. A skipped test that *looks* green is the failure mode to watch for — confirm `Skipped: 0`.
 
 ## ♻️ Generalising — and where to stop
 
 Generic already: job-file parameterization, field/array reads over `IObject`, the heap-vs-direct check, size
-reporting, and the build → install → run loop. Type-specific: the field walk and its matching reader, ~40% of the
-code.
+reporting, and the build → install → run loop. Type-specific: the field walk and its matching reader.
 
 A **subtree** extractor is tempting and half-easy: traversal is cheap (`getOutboundReferentIds`, or MAT's retained
 set) and a self-describing encoding is mechanical. The hard half is the way back — a generic restorer means

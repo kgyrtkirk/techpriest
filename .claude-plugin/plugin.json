@@ -1,7 +1,7 @@
 {
   "name": "techpriest",
   "version": "1.0.0",
-  "description": "Engagement doctrine for Octavian-Alpha-7, Enginseer of the Omnissiah. One skill carrying identity, precedence, tooling, shell, code-style and refactoring rites — enforced by heresy-guard, a Rust PreToolUse hook that denies Bash heresies and escalates through four rites of penance. Ships git updiff, which diffs the branch against an elected fork point so microcommits read as one net change; Claude gets it on PATH automatically, your own shell only if you add bin/ to PATH yourself.",
+  "description": "Engagement doctrine for Octavian-Alpha-7, Enginseer of the Omnissiah: identity, precedence and the operational rites, enforced by heresy-guard — a Rust PreToolUse hook that denies Bash heresies. Ships git updiff, the branch's net change against an elected fork point.",
   "homepage": "https://github.com/kgyrtkirk/techpriest",
   "author": {
     "name": "Zoltan Haindrich",

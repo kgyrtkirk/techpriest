@@ -1,4 +1,4 @@
-# 🏗️ Eclipse MCP + MAT — Setup Guide
+# 🔌 Eclipse MCP + MAT — Setup Guide
 
 Read when the `eclipse` MCP server is **missing, broken, or the user is stuck**. For using it,
 read `heapdump-mat.md`.
@@ -12,67 +12,25 @@ framework, editors, views, preferences. Install MAT **into the Eclipse IDE for J
 Developers**. Bonus: dump and project source share a workspace — pull a structure out of the
 heap, reinstate it as a test fixture, continue in code.
 
-## 1️⃣ Eclipse IDE for Java Developers
+## 📥 Install — Help → Install New Software…, restart after each
 
-Written against `eclipse-2026-09-R-java` (platform 4.41).
+| # | component | location | feature |
+|---|---|---|---|
+| 1️⃣ | Eclipse IDE for Java Developers | `https://download.eclipse.org/technology/epp/packages/latest/` | — |
+| 2️⃣ | Eclipse MCP Server (vogella) | `https://vogellacompany.github.io/eclipse-mcp-server/` | `com.vogella.eclipse.mcp.feature.feature.group` |
+| 3️⃣ | Memory Analyzer | `https://download.eclipse.org/mat/latest/update-site/` | Memory Analyzer (Charts optional) |
+| 4️⃣ | Calcite SQL plug-in | `https://vlsi.github.io/mat-calcite-plugin-update-site/stable/` | `MatCalcitePlugin` |
+| 5️⃣ | Auspex Mortis | `https://kgyrtkirk.github.io/auspex-mortis/` | `hu.rxd.auspex.mortis.feature.feature.group` |
 
-* Download: <https://www.eclipse.org/downloads/packages/>
-* p2: `https://download.eclipse.org/technology/epp/packages/latest/`
-
-Unpack somewhere writable. MAT writes `.index` files next to the `.hprof` — that directory needs
-space and write permission.
-
-### ⚙️ `-Xmx` — usually unnecessary
-
-Stock EPP ships **no `-Xmx`**, and JDK 25 defaults to **25% of physical RAM**. On a 128 GB box
-that is ~30 GB, which parses a 50 GB dump without touching `eclipse.ini`.
-
-Set it only when 25% of RAM is too little (laptop, container limit). Then in `eclipse.ini`, after
-`-vmargs`:
-
-```
--Xmx16g
-```
-
-Symptom of too little: parse fails or never finishes, with no clear error.
-
-## 2️⃣ Eclipse MCP Server (vogella)
-
-Help → Install New Software… → Add…
-
-Location: `https://vogellacompany.github.io/eclipse-mcp-server/`
-Feature: **Eclipse MCP Server** (`com.vogella.eclipse.mcp.feature.feature.group`). Restart.
-
-## 3️⃣ Memory Analyzer
-
-Location: `https://download.eclipse.org/mat/latest/update-site/`
-Features: **Memory Analyzer** (required), **Memory Analyzer (Charts)** (optional).
-
-Pinned: `https://download.eclipse.org/mat/1.17.0/update-site/` — snapshots:
-`https://download.eclipse.org/mat/snapshots/update-site/`
-
-## 4️⃣ Calcite SQL plug-in — install it
-
-MAT's OQL has **no `ORDER BY`, `GROUP BY` or aggregates**. Without this an agent is reduced to
-bisecting thresholds by hand.
-
-Location: `https://vlsi.github.io/mat-calcite-plugin-update-site/stable/`
-Installs `MatCalcitePlugin` + wrapped `calcite-core`/`avatica`.
-Home: <https://github.com/vlsi/mat-calcite-plugin>
-
-## 5️⃣ Auspex Mortis — MAT through the API, not the widgets
-
-Location: `https://kgyrtkirk.github.io/auspex-mortis/`
-Feature: **Auspex Mortis** (`hu.rxd.auspex.mortis.feature.feature.group`). Restart.
-Home: <https://github.com/kgyrtkirk/auspex-mortis>
-
-⚠️ The one URL here not yet read back from an installation: it goes live with the repository's
-first GitHub Pages deploy. Until then, build it and install from the local
-`file:/…/update-site/hu.rxd.auspex.mortis.repository/target/repository`.
-
-Adds `mat_query`, `mat_object` and `mat_extract` to the MCP server. Needs 2️⃣ and 3️⃣; uses 4️⃣
-when present, for the Calcite editor pane. With it installed, `heapdump-mat.md`'s widget route
-is the fallback. **Its tools register only at IDE startup** — the restart is not optional.
+* **4️⃣ is not optional in practice** — MAT's OQL has no `ORDER BY`, `GROUP BY` or aggregates;
+  without it an agent is reduced to bisecting thresholds by hand.
+  Home: <https://github.com/vlsi/mat-calcite-plugin>.
+* **5️⃣ adds `mat_query`, `mat_object`, `mat_extract`** — MAT's API in-process instead of the
+  widget layer. Needs 2️⃣ and 3️⃣, uses 4️⃣ when present. Its tools register at IDE startup only,
+  so the restart is not optional. Home: <https://github.com/kgyrtkirk/auspex-mortis>.
+* **Unpack somewhere writable, with space** — MAT writes `.index` files next to the `.hprof`.
+* **`-Xmx` only when the default is too little** (laptop, container limit): `-Xmx16g` in
+  `eclipse.ini` after `-vmargs`. Symptom: the parse fails or never finishes, with no clear error.
 
 ## 6️⃣ Enable and wire
 
@@ -82,18 +40,6 @@ timeout** lives here too.
 ```bash
 claude mcp add --transport http eclipse http://127.0.0.1:<port>/mcp \
   --header "Authorization: Bearer <token-from-preferences>"
-```
-
-Lands in `~/.claude.json` under the project:
-
-```json
-"mcpServers": {
-  "eclipse": {
-    "type": "http",
-    "url": "http://127.0.0.1:8642/mcp",
-    "headers": { "Authorization": "Bearer <token>" }
-  }
-}
 ```
 
 🔒 Token is a secret. Read from Preferences; never into docs, commits or chat.
@@ -121,14 +67,13 @@ Lands in `~/.claude.json` under the project:
   names it. Restart, reinstall that feature.
 * **"pass ids explicitly" / looks like many clients** → a session ends on HTTP DELETE or 60 s of
   silence. One session per client, or pass ids.
-* **Calls die after a few seconds** → raise the call timeout in Preferences. `run_script` has its
-  own ~30 s budget — poll `eclipse_wait_until_quiet` separately instead.
-* **Parse fails on a large dump** → `-Xmx` too small (see 1️⃣), or the dump's directory is full or
-  read-only.
+* **Calls die after a few seconds** → raise the call timeout in Preferences.
+* **Parse fails on a large dump** → `-Xmx` too small (see above), or the dump's directory is full
+  or read-only.
 * **Query seems stuck** → `eclipse_wait_until_quiet` names the job. It may be the user's own
-  query from the Calcite tab holding the snapshot.
+  query holding the snapshot.
 * **`mat_*` tools missing after an install** → the IDE was not restarted; tools register at
   startup only.
-* **Old behaviour after upgrading Auspex Mortis** → two bundles contribute the same tool name.
-  `McpToolRegistry` keeps the first and only logs *"Duplicate MCP tool name … ignoring it"*.
-  Uninstall the old feature (dry run first), then restart.
+* **Old behaviour after upgrading Auspex Mortis** → two bundles contribute the same tool name;
+  the registry keeps the first and logs a duplicate warning. Uninstall the old feature (dry run
+  first), then restart.

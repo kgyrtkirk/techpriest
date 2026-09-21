@@ -203,11 +203,11 @@ pub fn rule(id: &str) -> &'static Rule {
 mod tests {
     use super::*;
 
-    const REPO: &str = "/home/dev/claude/druid";
+    const REPO: &str = "/work/repo";
 
     /// One command per rule, proving the rule is reachable at all.
     const SAMPLES: &[(&str, &str)] = &[
-        ("cd-into-cwd", "cd /home/dev/claude/druid && ls"),
+        ("cd-into-cwd", "cd /work/repo && ls"),
         ("cd-self", "cd . && ls"),
         ("forbidden-interpreter", "python3 -c 'print(1)'"),
         ("grep-over-java", "grep -n 'Foo' src/Bar.java"),
@@ -334,13 +334,13 @@ mod tests {
     #[test]
     fn cd_into_cwd_tolerates_quotes_and_trailing_slash() {
         for text in [
-            "cd /home/dev/claude/druid",
-            "cd /home/dev/claude/druid/ && ls",
-            "cd \"/home/dev/claude/druid\"",
+            "cd /work/repo",
+            "cd /work/repo/ && ls",
+            "cd \"/work/repo\"",
         ] {
             assert!(judge(text).contains(&"cd-into-cwd"), "{text} should convict cd-into-cwd");
         }
-        assert_eq!(judge("cd /home/dev/claude/druid/extensions-core"), [] as [&str; 0]);
+        assert_eq!(judge("cd /work/repo/submodule"), [] as [&str; 0]);
     }
 
     #[test]

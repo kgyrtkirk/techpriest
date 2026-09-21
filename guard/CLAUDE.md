@@ -14,9 +14,9 @@ cargo build --release
 | file | role |
 | --- | --- |
 | `command.rs` | parses the command into pipeline `Stage`s via `brush-parser` |
-| `catalogue.rs` | the 13 `Rule`s. The **only** place rules are registered |
+| `catalogue.rs` | every `Rule`. The **only** place rules are registered |
 | `ledger.rs` | per-session tallies in temp-dir counter files |
-| `verdict.rs` | the deny message and the 4-rung ladder of rites (3/6/10/15) |
+| `verdict.rs` | the deny message and the ladder of rites — rungs and thresholds live here |
 | `main.rs` | payload → `judge()` → deny JSON |
 
 ## 🔍 Judge stages, never raw text

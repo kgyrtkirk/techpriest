@@ -11,25 +11,20 @@ the widget layer entirely. Everything after it is the route for an IDE without t
 
 ## 🏗️ Setup
 
-Assumed working. **If the `eclipse` MCP server is missing, misbehaving, or the user is having
-trouble getting it running → read `eclipse-mcp-setup.md`** (update site URLs, `eclipse.ini`
-heap, client wiring, verification, troubleshooting).
+Assumed working. **Missing, misbehaving, or the user is stuck → `eclipse-mcp-setup.md`**; it
+owns the install, the wiring and the verification. One constraint is worth knowing without
+opening it: MAT must live inside a **full Eclipse IDE for Java Developers**, never standalone
+MAT.
 
-Worth knowing without opening it: MAT must be installed into a **full Eclipse IDE for Java
-Developers**, never standalone MAT — the server needs the workspace, JDT and the command
-framework. The bonus is that dump and project source share a workspace: extract a problematic
-structure from the heap, reinstate it as a test fixture, and continue the analysis in code.
-**That extraction has its own rite → `heapdump-extract-to-junit.md`.**
+Dump and project source then share a workspace, so a structure lifted out of the heap can be
+reinstated as a test fixture → **`heapdump-extract-to-junit.md`**.
 
 ## 🔧 Auspex Mortis — reach for `mat_*` first, when they are there
 
 **If the tool list carries `mat_query`, `mat_object` and `mat_extract`, the rest of this rite is
-the fallback, not the method.** They are MCP tools contributed by **Auspex Mortis**, bundle
-`hu.rxd.auspex.mortis`, and they run MAT's own API in the IDE's process instead of driving its
-widgets. Home <https://github.com/kgyrtkirk/auspex-mortis>, update site
-`https://kgyrtkirk.github.io/auspex-mortis/` — install per `eclipse-mcp-setup.md` 5️⃣. **Absent,
-but the user drives MAT from this IDE regularly? Suggest installing it** before starting the
-widget dance below.
+the fallback, not the method.** They run MAT's own API in the IDE's process instead of driving
+its widgets; install per `eclipse-mcp-setup.md`. **Absent, but the user drives MAT from this
+IDE regularly? Suggest installing it** before starting the widget dance below.
 
 | ask | tool |
 |---|---|
@@ -37,16 +32,13 @@ widget dance below.
 | one object: class, sizes, GC roots, fields with their referents resolved, array slices | `mat_object` |
 | the object graph below one object, written to a file with a report | `mat_extract` (dry run by default) |
 
-What that deletes outright, all of it verified against a 51 GB dump:
-
-* **The column problem is gone.** Every column comes back as JSON, unformatted — a size is a
-  number, not `1.2 MB`. No clipboard, no `xclip`, no folding into one `||` column.
-* **No focus theft, no X11, no `press_key`.** Nothing is fronted; `foreground: false` is fine.
-* **No query-browser dance.** One call replaces front → activate → QueryBrowser → Enter →
-  settle → quiet, and `outcome: "success"` stops being a lie: the rows are the proof.
-* **Sorting exists.** `sortBy` (column label) plus `desc` orders through MAT's own
-  `RefinedResultBuilder`, which is what makes `histogram` answer "the biggest classes".
-* **Addresses are hex** in the `@address` column, wherever a row has an object behind it.
+What that deletes outright: **the column problem** (every column returns as JSON, unformatted —
+a size is a number, not `1.2 MB`; no clipboard, no `xclip`, no folding into one `||` column),
+**focus theft, X11 and `press_key`** (nothing is fronted; `foreground: false` is fine), and
+**the query-browser dance** — one call replaces front → activate → QueryBrowser → Enter →
+settle → quiet, and `outcome: "success"` stops being a lie because the rows are the proof. It
+also **sorts** — `sortBy` (column label) plus `desc` — which is what makes `histogram` answer
+"the biggest classes". Addresses come back hex in the `@address` column.
 
 What stays exactly as this rite says: **cost**. The query runs in the same process against the
 same snapshot, so prefilter a big class with `WHERE` before `ORDER BY`, a Calcite query still
@@ -56,9 +48,8 @@ ignores cancellation, and `sortBy` materializes the whole result before it sorts
 
 Every result is also opened as an ordinary MAT pane (`show`, default true), so the person at
 the IDE carries on from where the agent stopped — the pane holds the *same* result object the
-rows came from, sorting included. `title` names the tab; without it the command line is cut to
-60 characters. A `calcite "…"` query opens the Calcite plug-in's own pane with the statement
-**pretty-printed in its SQL editor**, so it can be edited and re-run by hand.
+rows came from, sorting included. `title` names the tab. A `calcite "…"` query lands in the
+plug-in's own SQL editor pane, **pretty-printed**, editable and re-runnable by hand.
 
 Pass `show: false` for a probe whose pane would only be noise. Tabs still cannot be closed from
 here, so that is the one place the old budget rule survives.
@@ -67,11 +58,8 @@ here, so that is the one place the old budget rule survives.
 
 * **It never opens or parses a dump.** No dump open → an error listing what is open. A human
   opens the dump; a restart closes it, because MAT's editor input is not persistable.
-* **A new tool needs an IDE restart.** `McpToolRegistry` instantiates tools once and nothing
-  calls its `reset()`, so a hot-installed bundle registers nothing. Install the p2 feature,
-  then restart.
-* **The Calcite pane is held by reflection** — that plug-in exports neither the pane's class
-  nor its package. It degrades to the plain result pane and logs a warning.
+* **A new tool needs an IDE restart** — tools register at startup, so a hot-installed bundle
+  contributes nothing. Install the p2 feature, then restart.
 
 ## 🖥️ Session preconditions
 
@@ -185,12 +173,11 @@ bytes truthfully. Per-field retained sizes never partition the parent's total; c
 against it separately.
 
 **💸 Prefilter before sorting, and select nothing you do not need.** `ORDER BY` over a
-multi-million-instance class materialises and sorts every row. A bare
-`… from "java.util.HashMap" order by retainedSize(this) desc limit 2` over 4.99 M instances ran
-past **ten minutes**; the same question with `where retainedSize(this) > 10000000` in front of it
-answered in **under eight seconds**. Cost per function differs sharply too: `retainedSize` and
-`shallowSize` are index lookups, while `getSize` and `length` read the object's array — asking for
-a count you will not use can dominate the whole query. Always bound a big class with a `WHERE`.
+multi-million-instance class materialises and sorts every row — minutes, versus seconds for the
+same question with a `where retainedSize(this) > …` in front of it. Cost per function differs
+sharply too: `retainedSize` and `shallowSize` are index lookups, while `getSize` and `length`
+read the object's array — asking for a count you will not use can dominate the whole query.
+Always bound a big class with a `WHERE`.
 
 ## 📖 Reading results — the column problem
 
@@ -211,13 +198,7 @@ select 'n='    || cast(count(*)                as varchar) ||
 
 No clipboard, no focus theft, no copy quirks, no machine state touched. **Use this for every
 scalar, aggregate and small grouped result** — including histograms, where one folded row per
-bucket reads perfectly:
-
-```sql
-select 'decile=' || cast(b         as varchar) ||
-       ' arrays='|| cast(count(*)  as varchar) info
-  from ( … ) group by b order by b
-```
+bucket reads perfectly.
 
 **Always print the multi-column equivalent alongside it**, so the human can paste it into the
 Calcite tab and dig further with real sortable columns:
@@ -254,7 +235,7 @@ DISPLAY=:0 xclip -o -selection clipboard
 * **OQL and Calcite *editor* panes focus a `StyledText`**, so a copy there returns the query text,
   not the result. Query-result panes rendered as `Table` or `Tree` are the ones that copy.
 * Aggregate Calcite panes **do** copy — folded and grouped results come back whole, `Total:` line
-  included. (An earlier revision of this rite claimed they do not. It was wrong.)
+  included.
 
 ### 3. Pane types tell you what happened
 
@@ -278,8 +259,7 @@ Exactly one lever moves focus:
 | `eclipse_set_ide_visibility visible: true` | — | ✅ |
 
 A pane can therefore be selected, rendered and reported `visible: true` while a copy returns a
-different, hidden pane — verified three times against three levers. **Front the IDE between
-selecting the tab and copying, every time.** A freshly opened result pane does **not** take focus
+different, hidden pane. **Front the IDE between selecting the tab and copying, every time.** A freshly opened result pane does **not** take focus
 on its own; the pane focused by the last real key event keeps it.
 
 ## 🗂️ Tabs → panes, deterministic
@@ -376,22 +356,6 @@ select 'decile='|| cast(b           as varchar) ||
  order by b
 ```
 
-Multi-column version of the same, to hand over for interactive digging:
-
-```sql
-select b                decile,
-       count(*)         arrays,
-       sum(len)         slots,
-       sum(len-sz)      nulls
-  from (select length(this['tbl'])                          len,
-               getSize(this['tbl'])                         sz,
-               (getSize(this['tbl'])*10)/length(this['tbl']) b
-          from "io.example.Foo"
-         where length(this['tbl']) > 0)
- group by b
- order by b
-```
-
 **Drill into one object — `list_objects 0x<address>`.** Opens that single object as an expandable
 tree, no OQL needed. This is the focusless read: `expand_row` works on a pane that is not even
 visible, and column 0 carries the field name, the type, the address **and** a String's value, so a
@@ -401,9 +365,9 @@ whole drill-down needs no clipboard at all:
 list_objects 0x4038601f3b8          → java.util.HashMap @ 0x4038601f3b8
   expand → table java.util.HashMap$Node[8388608] @ 0x40cb5c00000
   expand → java.util.HashMap$Node @ 0x40006e8cd68      (r0 is the <class> pseudo-row; entries start at r1)
-  expand → key org.apache.druid.timeline.SegmentId @ 0x408133d08b8
-             dataSource java.lang.String @ …  iow_events
-             version    java.lang.String @ …  1970-01-01T00:00:00.000Z
+  expand → key io.example.RecordId @ 0x408133d08b8
+             source  java.lang.String @ …  example_source
+             version java.lang.String @ …  1970-01-01T00:00:00.000Z
            value java.lang.Object @ …          ← the HashSet PRESENT sentinel
 ```
 

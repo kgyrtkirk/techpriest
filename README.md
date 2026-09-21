@@ -11,18 +11,14 @@ nudge when a source edit or a refactor request enters the conversation.
 
 | path | purpose |
 | --- | --- |
-| `skills/techpriest/SKILL.md` | core doctrine — precedence, identity, session start, shell non-negotiables, communication, mindset, memory |
-| `references/tooling.md` | which tool or command to reach for |
-| `references/shell.md` | how to write Bash — the catalogue of heresies and the sanctioned form of each |
-| `references/code-style.md` | authoring source — surgical changes, patterns, libraries, apidoc |
-| `references/refactoring.md` | broad multi-file changes — the >20-file workflow, plans |
-| `references/heapdump-mat.md` | heap dumps via the `eclipse` MCP server (setup: `eclipse-mcp-setup.md`) |
-| `bin/git-updiff` | `git updiff` — the current branch's net change against the fork point it elects |
-| `guard/` | `heresy-guard`, the Rust `PreToolUse` judge — self-contained crate |
-| `hooks/` | `hooks.json` plus the bootstrap, guard and re-anchor scripts |
+| `skills/techpriest/SKILL.md` | the doctrine — identity, precedence, session start, communication, mindset. Hubs to the rites |
+| `skills/techpriest/references/` | the rites, read on demand: tooling, shell, code-style, refactoring, heap-dump analysis |
+| `bin/git-updiff` | `git updiff` — the branch's net change against the fork point it elects |
+| `guard/` | `heresy-guard`, the Rust `PreToolUse` judge — self-contained crate, own `CLAUDE.md` |
+| `hooks/` | `hooks.json` plus the bootstrap, guard and re-anchor entry points |
 | `examples/CLAUDE.md` | the user-level mandate an adopter copies |
 
-Only `techpriest` is a skill; the rites are reference files it reads on demand, so the session
+Only `techpriest` is a skill; the rites are reference files it reads on demand, so a session
 pays for depth only when the context calls for it.
 
 ## 📥 Install
@@ -46,63 +42,43 @@ A user skill of the same name shadows the plugin's — delete any loose
 ## 🧭 `git updiff`
 
 Microcommits fragment a change across dozens of half-states, so per-commit views show churn
-instead of the change. `git updiff` diffs against the commit the branch forked from, which is
-invariant under rebase, amend, reorder and squash, and it takes every `git diff` argument.
+instead of the change. `git updiff` diffs against the commit the branch forked from — invariant
+under rebase, amend, reorder and squash — and it takes every `git diff` argument.
 
-The fork point is **elected, not assumed** — it reduces each candidate upstream to
-`merge-base(HEAD, candidate)` and keeps the bases unreachable from another base, so the
-tightest lineage wins. Work across several upstreams of one repo, listed most-specific first:
+The fork point is **elected, not assumed**: the tightest lineage wins, falling back to
+`@{upstream}` and the remotes' default branches. Work across several upstreams of one repo,
+listed most-specific first:
 
 ```
 git config --add techpriest.upstream implydata/iow
-git config --add techpriest.upstream implydata/master
 git config --add techpriest.upstream apache/master
 ```
 
-With nothing configured it falls back to `@{upstream}`, then each remote's `HEAD`/`main`/
-`master`. `git updiff --why` shows every candidate and which one won — reach for it whenever a
-diff looks far too wide.
+`git updiff --why` names every candidate and the winner — reach for it whenever a diff looks
+far too wide.
 
 Claude Code puts the plugin's `bin/` on the Bash tool's `PATH`, so this needs no setup inside a
-session. Your own shell is **not** touched: if you want `git updiff` in your terminal too, add
-that directory to your `PATH` yourself. That is deliberately left as your decision.
+session. Your own shell is **not** touched; adding that directory to your `PATH` is deliberately
+left as your decision.
 
-## 🔨 The guard builds itself
+## ⚖️ The guard
 
-Claude Code has no install-time hook, so the crate provisions itself at `SessionStart`:
-`bootstrap.sh` builds when the binary is missing and `cargo` is present. That moment is the
-right one — it fires before any tool call, so the guard is armed for the first Bash command it
-must judge, and `cargo` no-ops every later session. The first session after install pays one
-cold build (hence `"timeout": 180`). Build output goes to stderr — visible under
-`claude --debug` — because stdout carries the hook's JSON and nothing else.
+`heresy-guard` reads the `PreToolUse` payload on stdin. Silence means sanctioned; a denial names
+the act, its cost, the directive forgotten and the correct incantation. Commands are parsed with
+a real bash grammar, so the charge is about what a stage actually invokes. Repeat offences
+escalate through rites of penance, each demanding something the last did not.
 
-Degradation is deliberate, never silent:
-
-* **`cargo` absent** → no build, no denials, and the bootstrap says so.
-* **build fails** → same, plus: build by hand and read the error.
-* **binary missing at `PreToolUse`** → the gate exits silently. It never builds; it runs before
-  every Bash call and must stay instant, and a hook that blocks the session is worse than an
-  unjudged command.
+The crate builds itself: Claude Code has no install-time hook, so `SessionStart` compiles the
+binary when it is missing, in time for the first Bash call it must judge. Degradation is
+deliberate, never silent — no `cargo`, or a failed build, and the bootstrap says so in-session;
+a missing binary at `PreToolUse` yields no judgement rather than a blocked session. The first
+session after install pays one cold build.
 
 ```
 cargo build --release --manifest-path guard/Cargo.toml
 cargo test --manifest-path guard/Cargo.toml
 ```
 
-## ⚖️ The guard
-
-`heresy-guard` reads the `PreToolUse` payload on stdin. Silence means sanctioned; a denial
-names the act, its cost, the directive forgotten and the correct incantation. Thirteen rules
-live in `guard/src/catalogue.rs`, each carrying its own indictment and the test that convicts
-it.
-
-Commands are parsed with a real bash grammar, so the guard judges what a stage actually
-invokes — `git log --grep=python` is not python, and a `;` inside a quoted commit message is
-not a separator.
-
-Denials tally per session and escalate through four rites — Re-Anchoring, Restoration,
-Recitation, Excommunication — each demanding a *different* penance, because a rite repeated
-verbatim stops being read. One heresy repeated is judged separately: twice is choice, three
-times is habit. Tallies live under the system temp dir, keyed by session id.
-
-Working on the guard itself → `guard/CLAUDE.md`.
+The catalogue of heresies is one rite in two forms: written in
+`skills/techpriest/references/shell.md`, executable in `guard/src/catalogue.rs`. Working on the
+guard itself → `guard/CLAUDE.md`.

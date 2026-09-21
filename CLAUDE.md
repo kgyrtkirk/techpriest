@@ -5,10 +5,10 @@ Claude Code plugin, published as `github.com/kgyrtkirk/techpriest` (marketplace 
 
 | path | what it is |
 | --- | --- |
-| `skills/techpriest/` | the doctrine — `SKILL.md` plus the `references/` rites (tooling, shell, code-style, refactoring, heapdump-mat) |
+| `skills/techpriest/` | the doctrine — `SKILL.md`, hubbing to the `references/` rites |
 | `guard/` | `heresy-guard`, a Rust `PreToolUse` hook denying Bash heresies. Has its own `CLAUDE.md` |
 | `hooks/` | `hooks.json` and the bash entry points the harness actually calls |
-| `bin/` | executables Claude Code puts on the Bash tool's `PATH` — `git-updiff`. A top-level `bin/` bars org distribution; keep that trade in mind before adding to it |
+| `bin/` | executables Claude Code puts on the Bash tool's `PATH` — `git-updiff`. A top-level `bin/` bars org distribution: weigh that before adding |
 | `examples/CLAUDE.md` | the user-level mandate an adopter copies |
 
 ## ⚖️ Invariants
@@ -16,6 +16,11 @@ Claude Code plugin, published as `github.com/kgyrtkirk/techpriest` (marketplace 
 * `guard/src/catalogue.rs` and `references/shell.md` are one rite in two forms — executable and
   written. **Change one, change the other.** A denial quotes the written directive back at the
   offender, so drift makes the guard lie.
+* **One written form per fact.** Rule ids, counts, thresholds, algorithms, install steps and the
+  rite list live with whatever enforces them; every other mention states the contract and points
+  at the owner. A second copy is scope creep — it drifts inside one release and then lies.
+  Sole sanctioned duplicate: the `SKILL.md` non-negotiables, **names only**, because they must
+  bind before `shell.md` is ever loaded.
 * Every rite is reachable: listed in the `SKILL.md` hub, and named by whatever hook nudges it.
 
 ## 🧭 Working here
