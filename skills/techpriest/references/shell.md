@@ -73,9 +73,9 @@ so quote honestly and expect the charge to be about what you actually ran.
 * **correct**: branch on the command directly, or read the reported exit code.
 
 ### `mvn-absolute-path` — `mvn` by absolute path, e.g. `/usr/bin/mvn`
-* **why**: the `mvn` wrapper on `PATH` is the sanctioned entry point; it emits the compact
-  build summary you must read.
-* **correct**: invoke `mvn` directly, no absolute path.
+* **why**: it bypasses the wrapper that emits the compact build summary — `.git/bin/mvn`, or
+  whatever the environment resolves `mvn` to.
+* **correct**: `.git/bin/mvn` when the clone has a wrapper, otherwise bare `mvn`.
 
 ### `mvn-diverted` — `mvn` piped or redirected
 * **why**: the wrapper silences stdout — pipes and redirects produce garbage.

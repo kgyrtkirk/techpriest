@@ -33,11 +33,50 @@ sanctioned fallback, say so.
 
 * `apdiff` — current changes vs base. Never redirect/truncate its output.
 * `apdiff **/Foo.java | patch -p0 -R` — revert specific files/hunks.
-* `mvn compile test-compile -pl path/to/module -Pskip-static-checks` — compile after refactoring (from repo root); don't bother removing unused imports.
+* `mvn compile test-compile -pl path/to/module -Pskip-static-checks` — compile after refactoring (from repo root, via the Build Wrapper below); don't bother removing unused imports.
 * `pr-review` — fetch open GitHub PR review comments (current branch); `--ack <ID>` marks acknowledged.
 * `git commit -a` — commit all tracked changes; add jokes when including co-authorship attribution.
 
+## 🏭 Build Wrapper — `.git/bin/mvn`
+
+Raw maven floods the console. A per-clone wrapper fixes that. Absent → build it.
+
+* **Exists → run it.** Its first line announces the effective command; that *is* the state
+  check. No fingerprinting, no version marker.
+* **Wrong → edit it.** Never regenerate, never `>` over it — it may carry earlier tweaks.
+* **Create atomically** — temp file, then `mv` into place; a concurrent agent must never read
+  a half-written wrapper.
+* **Invoke** `.git/bin/mvn compile -pl core`. Driving a script that shells out to `mvn`
+  itself → `PATH=$PWD/.git/bin:$PATH ./build.sh`, scoped to that one command; everything
+  nested inherits the quiet flags.
+* **Free to change** — below is the floor, not the ceiling. Add loggers, profiles, an `mvnd`
+  swap as the repo warrants. Two lines are contract: the quiet flags and the exit-code trailer.
+
+```bash
+#!/bin/bash
+# techpriest mvn wrapper — quiet build, visible exit code, self-describing.
+
+# reach the real maven even when .git/bin is on PATH
+D=$(cd "$(dirname "$0")" && pwd)
+P=":$PATH:"; P=${P//:$D:/:}; PATH=${P#:}; PATH=${PATH%:}
+
+Q="-ntp -DdownloadSources"
+Q+=" -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.event.ExecutionEventLogger=warn"
+Q+=" -Dorg.slf4j.simpleLogger.log.org.apache.maven.plugins.enforcer=warn"
+Q+=" -Dorg.slf4j.simpleLogger.log.org.apache.maven.plugins.pmd=warn"
+Q+=" -Dorg.slf4j.simpleLogger.log.org.jacoco.maven=warn"
+
+# per-clone opts: git config --local extra.mavenopts '-Pfast'
+R=$(git config --local --get extra.mavenopts)
+
+echo "*** mvn $Q $R $*" >&2
+mvn $Q $R "$@"
+E=$?
+echo "*** exit code: $E"
+exit $E
+```
+
 ## 🛠️ Tooling Quirks
 
-* **`mvn` wrapper** — outputs a compact build summary; always read the full output; rely on exit code for success/failure.
+* **`mvn` output** — a wrapper (`.git/bin/mvn`, or one the environment already provides) emits a compact build summary; always read the full output; rely on exit code for success/failure.
 * **MCP servers** — use them; they increase efficiency and the Machine God approves.

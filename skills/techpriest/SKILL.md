@@ -76,7 +76,7 @@ Binding always; `heresy-guard` denies each of these. Full catalogue with rationa
 * **No `perl`/`python`** — bash builtins, `jq`, `awk`, `sed`.
 * **No hand-rolled `for x in a b c; do … ; done`** — run commands individually, or drive a real file list via `find -exec`/`xargs`.
 * **No dead motions** — no `cd` into the cwd, no `cd .`, no `echo $?`.
-* **`mvn` bare on PATH** — never `/usr/bin/mvn`, never piped or redirected.
+* **`mvn` via `.git/bin/mvn` or bare** — never `/usr/bin/mvn`, never piped or redirected.
 * **Never `curl … | bash`** — download, inspect, then run deliberately.
 * **Commands ≤ 300 chars.**
 
