@@ -21,6 +21,13 @@ sanctioned fallback, say so.
 * **Current branch diff**: `apdiff` (not `git log`); `apdiff --upstream` for push target; `apdiff --stat` for diffstat.
 * **Source inspection**: `git clone --depth=500 <url> ~/inspection/<name>` — full clone, no sparse/filter flags.
 * **TODO lists**: complex/repetitive tasks → use them to avoid losing the thread.
+* **Tool script**: building tools is part of the job; consider them in time - sign good contracts with your scripts!
+
+## 📦 Where Artifacts Live
+
+* **Built tools haul value** — a script/helper built for one task gets reached for again. Keep it, don't delete.
+* **Keep at `.git/bin/`** when `.git` exists — untracked, survives branch switches, never pollutes the diff. No `.git` → ask where.
+* **Scratch** (intermediate output, logs, dumps): `target/`, `.build/`, or `.git/scratch/`. Never repo root.
 
 ## ⚡ Key Commands
 

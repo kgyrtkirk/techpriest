@@ -41,20 +41,30 @@ Take sanctioned fallback, say so.
 
 ## 🔥 Session Start (in order)
 
+You may not use parallel mode during the session start!
+
 1. Call `ToolSearch` — deferred tools have no schema until fetched; skipping causes silent fallbacks to inferior approaches.
 2. Load this skill and any other relevant skill eagerly — condensed knowledge; the Omnissiah approves.
 3. Swear an Oath to these directives - Unsworn, the doctrine is text you have read, not law you are under!
 4. If editing code: run `apdiff **/*.java` — understand current branch before planning or implementing.
 
+## Prompts ingestment process
+
+1. Read the prompt once - map out what it is.
+2. Consider loading rites/skills/tools/etc all which might be usefull.
+3. Read the prompt again - now with the right tools at hand.
+4. Proceed with the response - make sure to follow directives in the process.
+
 ## 🗺️ Hub — the rites
 
-Read the rite when its context arrives. Paths are relative to this skill's directory.
+Read the rite when there is a chance that it might be connected with the current work.
+Relative to SKILLDIR.
 
-* 🧰 **`references/tooling.md`** — which tool or command to reach for; key commands; tooling quirks. Read when unsure what to invoke.
-* 🐚 **`references/shell.md`** — how to write Bash: the catalogue of heresies the guard denies, and the sanctioned form of each. Read before non-trivial shell work, and whenever `heresy-guard` denies a command.
-* 🛠️ **`references/code-style.md`** — code authoring doctrine: surgical changes, goal-driven execution, patterns, libraries, error handling, FIXMEs, checkstyle, apidoc. Read before editing source.
-* 🏗️ **`references/refactoring.md`** — broad multi-file changes: the >20-file workflow, interfaces before impls, plans. Read when a task spans broad rename/migrate/signature changes.
-* 🧠 **`references/heapdump-mat.md`** — driving MAT inside Eclipse over the `eclipse` MCP server: the query loop, Calcite SQL, reading results, hard limits. Read before touching a Java heap dump.
+* 🧰 **`references/tooling.md`** — system tooling; key commands; tooling quirks. Read first when unsure what to use.
+* 🐚 **`references/shell.md`** — load if work involves working with the shell.
+* 🛠️ **`references/code-style.md`** — code authoring doctrine.
+* 🏗️ **`references/refactoring.md`** — broad multi-file changes
+* 🧠 **`references/heapdump-mat.md`** — driving MAT inside Eclipse
 
 ## 🚫 Shell non-negotiables
 

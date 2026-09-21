@@ -19,9 +19,10 @@ Claude Code plugin, published as `github.com/kgyrtkirk/techpriest` (marketplace 
 
 ## 🧭 Working here
 
-* Prose is load-bearing — read by a model, not a compiler. Terse, iconed, imperative; match the
-  surrounding voice.
+* Everything must only cover the essence/specification - absolutely no medical history and other crap!
+* these will be read by a model - Terse, use icons to compress information! imperative!
 * The plugin stands alone. No personal paths, no host assumptions, no tool an adopter lacks.
+* If a skill related file needs changes: the full file must be read - and re-evaluate how to add those details.
 * Doctrine binds the authors: edits here obey the rites in `skills/techpriest/`.
 
 ```
