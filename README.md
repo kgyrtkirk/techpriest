@@ -2,11 +2,21 @@
 
 ## 💡 Idea
 
-I feel like these models are more like wild dogs...they are more or less capable of following the goal - but constraints like quality slip easily - so I wanted to attempt to overcome that by presenting the guardrails as a religion (as it most likely has eaten quite a lot of that too during training).
+These models are more like wild dogs...they are more or less capable of following the goal - but constraints like quality slip easily - so I wanted to attempt to overcome that by presenting the guardrails as a religion (as it most likely has eaten quite a lot of that too during training).
 That seemed to improve some things...but after some time it degrades - and drops back to "basic training" level.
-An attempt to fix that was to introduce the heresy-guard - to validate requests and force the model to reiterate the directives to refresh them.
 
-It doesn't always work...it seems like different models (opus 4.8/5) have different levels of discipline to honor such things; also the base CLI injects a lot of stuff - which could alter how this works.
+An attempt to to fix that was to introduce the heresy-guard - to validate requests and force the model to reiterate the directives to refresh them.
+
+It doesn't always work...it seems like different models (opus 4.8/5) have different levels of discipline to honor such things; I also suspect that the base CLI injects a lot of stuff - which could alter how this works (not sure which matters more).
+
+My experience was:
+- I was working with opus-4.8; kinda working ok.
+- when 5 came out I switched over; however it was coming up with really dumb ideas
+- 4.8 outperformed it easily so I switched back
+- 2 weeks later 4.8 became dumb...
+- switching to 5 did not feel like that much of a downgrade anymore...
+- maybe they have equalized them and made them both dumb?
+- I suspect that they are fine-tuning the CLI for the latest model; which will make older ones not perform that well after some time.
 
 ## ⚙️ Identity
 
