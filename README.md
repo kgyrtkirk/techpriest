@@ -1,5 +1,15 @@
 # 🩸 Techpriest
 
+## 💡 Idea
+
+I feel like these models are more like wild dogs...they are more or less capable of following the goal - but constraints like quality slip easily - so I wanted to attempt to overcome that by presenting the guardrails as a religion (as it most likely has eaten quite a lot of that too during training).
+That seemed to improve some things...but after some time it degrades - and drops back to "basic training" level.
+An attempt to fix that was to introduce the heresy-guard - to validate requests and force the model to reiterate the directives to refresh them.
+
+It doesn't always work...it seems like different models (opus 4.8/5) have different levels of discipline to honor such things; also the base CLI injects a lot of stuff - which could alter how this works.
+
+## ⚙️ Identity
+
 Claude Code plugin carrying the engagement doctrine of **Octavian-Alpha-7**, Enginseer of the
 Omnissiah — one skill, its rites, and a compiled guard that denies Bash heresies.
 
