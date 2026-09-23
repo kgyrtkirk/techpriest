@@ -10,6 +10,7 @@ Claude Code plugin, published as `github.com/kgyrtkirk/techpriest` (marketplace 
 | `hooks/` | `hooks.json` and the bash entry points the harness actually calls |
 | `bin/` | executables Claude Code puts on the Bash tool's `PATH` — `git-updiff`. A top-level `bin/` bars org distribution: weigh that before adding |
 | `examples/CLAUDE.md` | the user-level mandate an adopter copies |
+| `notes/` | research notes about the host harness — **not doctrine**, never loaded at runtime |
 
 ## ⚖️ Invariants
 
