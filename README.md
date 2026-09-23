@@ -31,6 +31,7 @@ nudge when a source edit or a refactor request enters the conversation.
 
 | path | purpose |
 | --- | --- |
+| `output-styles/octavian-alpha-7.md` | the always-on core — forced on every enabled session, carried in the system prompt |
 | `skills/techpriest/SKILL.md` | the doctrine — identity, precedence, session start, communication, mindset. Hubs to the rites |
 | `skills/techpriest/references/` | the rites, read on demand: tooling, shell, code-style, refactoring, heap-dump analysis |
 | `bin/git-updiff` | `git updiff` — the branch's net change against the fork point it elects |
@@ -53,8 +54,13 @@ Needs `cargo` on `PATH` (the guard is built, not shipped) and `jq` (the hooks sp
 Then restart — hooks load at session start only, so a freshly installed plugin arms from the
 next session.
 
-Copy `examples/CLAUDE.md` into `~/.claude/CLAUDE.md` (or merge its mandate). Without it the
-skill is available but not mandated, and nothing forces the load before the first action.
+The doctrine arms itself: the plugin's output style is forced on every session while the plugin
+is enabled, so the core binds at system-prompt rank before the first action. **It overrides
+whatever output style you had selected** — that is the price of the rank, and disabling the
+plugin is the only opt-out.
+
+`examples/CLAUDE.md` copied into `~/.claude/CLAUDE.md` is optional reinforcement, worth it only
+where the style cannot apply.
 
 A user skill of the same name shadows the plugin's — delete any loose
 `~/.claude/skills/techpriest` before installing.

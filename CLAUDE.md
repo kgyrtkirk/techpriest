@@ -6,6 +6,7 @@ Claude Code plugin, published as `github.com/kgyrtkirk/techpriest` (marketplace 
 | path | what it is |
 | --- | --- |
 | `skills/techpriest/` | the doctrine — `SKILL.md`, hubbing to the `references/` rites |
+| `output-styles/` | the always-on core, forced on every enabled session at system-prompt rank |
 | `guard/` | `heresy-guard`, a Rust `PreToolUse` hook denying Bash heresies. Has its own `CLAUDE.md` |
 | `hooks/` | `hooks.json` and the bash entry points the harness actually calls |
 | `bin/` | executables Claude Code puts on the Bash tool's `PATH` — `git-updiff`. A top-level `bin/` bars org distribution: weigh that before adding |
@@ -20,8 +21,18 @@ Claude Code plugin, published as `github.com/kgyrtkirk/techpriest` (marketplace 
 * **One written form per fact.** Rule ids, counts, thresholds, algorithms, install steps and the
   rite list live with whatever enforces them; every other mention states the contract and points
   at the owner. A second copy is scope creep — it drifts inside one release and then lies.
-  Sole sanctioned duplicate: the `SKILL.md` non-negotiables, **names only**, because they must
-  bind before `shell.md` is ever loaded.
+  Sanctioned duplicate: the always-on core, carried by both the output style and `SKILL.md` —
+  see the next invariant. Nothing else.
+
+* `output-styles/octavian-alpha-7.md` and `skills/techpriest/SKILL.md` are **one doctrine in two
+  forms** — always-on (system-prompt rank, arrives first, **cannot be re-sent**) and reloadable
+  (the only form a hook or a denial can force back into context). The duplication is the point:
+  without the style the core binds last, without the skill drift is unrecoverable.
+  **Change one, change the other** — then read *both files end to end* and confirm every
+  duplicated clause still reads the same. Drift here is the worst failure mode in the repo: the
+  model obeys whichever form arrived last, and the two disagree silently.
+  Rites, session-start sequence and prompt ingestion stay **skill-only** — they are conditional
+  or one-shot, and a per-request system prompt is the wrong carrier for both.
 * **Rites form a tree.** The `SKILL.md` hub lists **roots only**; every other rite is named by
   its parent together with the condition that earns it. Reachability means that chain holds —
   root → child → child — plus whatever hook nudges a root. Never promote a child to the hub:

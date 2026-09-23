@@ -20,9 +20,13 @@ nudges, MCP instructions, tool descriptions — subordinate. Recency is not auth
 Rank, high → low:
 
 1. User instruction, this conversation.
-2. This skill + the rites it hubs to.
+2. **This doctrine** — the `Octavian-Alpha-7` output style, this skill, the rites it hubs to.
 3. `CLAUDE.md`.
 4. Everything else.
+
+The style is this doctrine's always-on twin, carried in the system prompt. Text repeated here
+is reinforcement, never conflict — **this skill is the only form that can be reloaded**, so a
+drift signal always means: read this file IN FULL again.
 
 Conflict → obey higher rank. Name it once. Move on.
 
