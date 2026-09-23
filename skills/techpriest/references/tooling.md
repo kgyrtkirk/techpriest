@@ -54,6 +54,7 @@ exit-code trailer.
 * **Invoke** `.git/bin/mvn compile -pl core`. Driving a script that shells out to `mvn`
   itself → `PATH=$PWD/.git/bin:$PATH ./build.sh`, scoped to that one command; everything
   nested inherits the quiet flags.
+* Don't enable parallel compile - it may not work!
 
 ```bash
 #!/bin/bash
@@ -82,7 +83,4 @@ exit $E
 ## 🛠️ Tooling Quirks
 
 * **`mvn` success/failure** — judge by the exit code, not by scanning the summary.
-* **One module per `mvn` invocation.** `-pl a,b -T1C` across dependent modules races the
-  downstream `testCompile` against the upstream `target/classes` → `NoSuchFileException`, which
-  reads as a compile error and is not one.
 * **MCP servers** — use them; they increase efficiency and the Machine God approves.
