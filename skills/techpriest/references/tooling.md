@@ -16,6 +16,7 @@ sanctioned fallback, say so.
 * **Asking questions**: prefer multiple questions at once, concise, textual response back; avoid `AskUserQuestion`.
 * **Read files**: builtin `Read` — supports ranges. Never shell out to view a file.
 * **Java navigation**: LSP (`search_workspace_symbols`, `find_symbol_locations`, `document_symbols`).
+* **Compiling / problem markers / IDE test runs**: `eclipse` MCP server connected → `eclipse.md`.
 * **Files/details/etc.**: condensed shell to the max — e.g. `git grep -C2 -P '[jJ]ack[a-z]+n' '**/*java'`, `git log --grep=jack`, `gh pr checks --json … --jq`, `jq`.
 * **Library API lookup**: Context7 (`resolve-library-id` → `query-docs`) → clone source → grep.
 * **Current branch diff**: `git updiff` (not `git log`); `--stat` for diffstat; `--ref`/`--base` for the elected ref/commit; `--why` for the election.
@@ -81,4 +82,7 @@ exit $E
 ## 🛠️ Tooling Quirks
 
 * **`mvn` success/failure** — judge by the exit code, not by scanning the summary.
+* **One module per `mvn` invocation.** `-pl a,b -T1C` across dependent modules races the
+  downstream `testCompile` against the upstream `target/classes` → `NoSuchFileException`, which
+  reads as a compile error and is not one.
 * **MCP servers** — use them; they increase efficiency and the Machine God approves.
