@@ -54,6 +54,13 @@ Reach for `calcite` first; fall back to `oql` only for object-set arguments.
 (array length), `getSize` (collection/map size, or **non-null element count** of an array),
 `getByKey`, `getField`.
 
+**Field types** — a primitive field (`this['port']`) comes back as its value; a `String` field
+needs `toString`. An untyped reference chain inside an aggregate (`sum(this['a']['size'])`) fails
+in Calcite's generated code → `sum(cast(… as bigint))`.
+
+**`Object '…' not found` is ambiguous** — bad quoting, or the class is absent from this build.
+Take the real name from the dump (an object's class) before blaming the syntax.
+
 **⚠️ `retainedSize` vs `shallowSize` on arrays.** `retainedSize` counts only what an object
 *dominates*; a shared array (buffer slice, interned table) contributes ~0 and the number looks
 wrong. An array's element data lives in its **shallow** size — use `shallowSize` to count array
@@ -170,6 +177,11 @@ Pass `show: false` for a probe whose pane would only be noise.
   opens the dump; a restart closes it, because MAT's editor input is not persistable.
 * **A new tool needs an IDE restart** — tools register at startup, so a hot-installed bundle
   contributes nothing. Install the p2 feature, then restart.
+
+### 🏷️ Which build, which JVM, which node
+
+Version, git hash, JVM flags or node identity of the dumped process →
+**`heapdump-build-identity.md`**.
 
 ## 🕯️ Fallback — driving the widgets
 
