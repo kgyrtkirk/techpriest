@@ -63,8 +63,8 @@ pub static CATALOGUE: &[Rule] = &[
         what: "plain grep over .java files",
         why: "git grep is VC-aware, faster, ignores build noise",
         directive: "Tool Selection: 'condensed shell to the max — e.g. git grep'",
-        fix: "use: git grep -nP 'pattern' '**/*.java'",
-        convicts: |cmd| cmd.in_repo && cmd.any_stage(|s| searches_tree(s) && s.matches(&JAVA_FILE)),
+        fix: "use: git grep -nP 'pattern' '**/*.java' — target in another repo: git -C <repo> grep …",
+        convicts: |cmd| cmd.any_stage(|s| searches_tree(s) && s.matches(&JAVA_FILE) && cmd.targets_repo(s)),
     },
     Rule {
         id: "recursive-grep",
@@ -318,6 +318,21 @@ mod tests {
     fn git_grep_directives_bind_only_inside_a_repo() {
         assert_eq!(judge("grep -rn 'Foo' Bar.java"), ["grep-over-java", "recursive-grep"]);
         assert_eq!(judge_in("grep -rn 'Foo' Bar.java", "/tmp", false), [] as [&str; 0]);
+    }
+
+    #[test]
+    fn grep_over_java_binds_where_its_targets_live() {
+        let clone = tempfile::tempdir().unwrap();
+        std::fs::create_dir(clone.path().join(".git")).unwrap();
+        let loose = tempfile::tempdir().unwrap();
+        std::fs::write(loose.path().join("Bar.java"), "").unwrap();
+        let (clone, loose) = (clone.path().display(), loose.path().display());
+
+        assert_eq!(judge(&format!("grep -n Foo {loose}/Bar.java")), [] as [&str; 0]);
+        assert_eq!(judge(&format!("grep -n Foo '{loose}/Bar.java'")), [] as [&str; 0]);
+        assert_eq!(judge(&format!("grep -n Foo {loose}/*.java")), [] as [&str; 0]);
+        assert_eq!(judge_in(&format!("grep -n Foo {clone}/*.java"), "/tmp", false), ["grep-over-java"]);
+        assert_eq!(judge(&format!("grep -n Foo {loose}/Bar.java {clone}/*.java")), ["grep-over-java"]);
     }
 
     #[test]

@@ -10,7 +10,7 @@ mod ledger;
 mod verdict;
 
 use std::io::{self, Read};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
@@ -86,14 +86,14 @@ fn judge(payload: &Payload) -> Option<String> {
     Some(Denial::new(&convicted, &tallies).to_string())
 }
 
-/// True when the command runs inside a git working tree, where the git-grep directives bind.
+/// True when the command runs inside a git working tree.
 fn in_repo(cwd: &str) -> bool {
     let start: PathBuf = if cwd.is_empty() {
         std::env::current_dir().unwrap_or_default()
     } else {
         PathBuf::from(cwd)
     };
-    start.ancestors().any(|dir: &Path| dir.join(".git").exists())
+    command::in_git_tree(&start)
 }
 
 #[cfg(test)]

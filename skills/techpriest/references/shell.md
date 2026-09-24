@@ -40,7 +40,9 @@ so quote honestly and expect the charge to be about what you actually ran.
 
 ### `grep-over-java` — plain `grep` over `.java` files
 * **why**: `git grep` is version-control aware, faster, ignores build noise.
-* **correct**: `git grep -nP 'pattern' '**/*.java'`.
+* **correct**: `git grep -nP 'pattern' '**/*.java'`; target in another repo → `git -C <repo> grep …`.
+* **spared**: targets outside any git working tree — `git grep` cannot reach them. No existing
+  path named → judged by the working directory.
 
 ### `recursive-grep` — `grep -r`/`-R` over the working tree
 * **why**: `git grep` is scoped to tracked files, respects `.gitignore`, and is faster.

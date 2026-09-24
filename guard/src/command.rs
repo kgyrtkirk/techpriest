@@ -4,6 +4,8 @@
 //! separator bytes could not tell a `;` inside `git commit -m "fix; ..."` from a
 //! true one, so it invented heresies that were never written.
 
+use std::path::{Path, PathBuf};
+
 use brush_parser::ast;
 use regex::Regex;
 
@@ -14,6 +16,8 @@ pub struct Stage {
     pub text: String,
     /// The program invoked, empty when the stage is not a simple command.
     pub name: String,
+    /// The arguments as written, unexpanded; empty when the stage is not a simple command.
+    pub args: Vec<String>,
     /// Stdout feeds the next stage.
     pub pipes: bool,
     /// Stdin comes from the previous stage.
@@ -62,6 +66,7 @@ impl Stage {
         Stage {
             text: text.to_string(),
             name: text.split_whitespace().next().unwrap_or_default().to_string(),
+            args: Vec::new(),
             pipes: false,
             fed: false,
             redirects_stdout: false,
@@ -107,6 +112,33 @@ impl<'a> Command<'a> {
     pub fn loops(&self) -> bool {
         self.loops
     }
+
+    /// True when a path the stage names lies in a git working tree.
+    ///
+    /// Only arguments naming an existing path count, so the pattern and option
+    /// values drop out; a stage naming none is judged by the working directory.
+    pub fn targets_repo(&self, stage: &Stage) -> bool {
+        let targets: Vec<PathBuf> = stage.args.iter().filter_map(|arg| self.existing_path(arg)).collect();
+        if targets.is_empty() {
+            return self.in_repo;
+        }
+        targets.iter().any(|path| in_git_tree(path))
+    }
+
+    /// The existing path an argument names, read up to its first glob character.
+    fn existing_path(&self, arg: &str) -> Option<PathBuf> {
+        let literal = arg.trim_matches(['\'', '"']).split(['*', '?', '[']).next()?;
+        let path = match literal.strip_prefix("~/") {
+            Some(rest) => PathBuf::from(std::env::var_os("HOME")?).join(rest),
+            None => Path::new(self.cwd).join(literal),
+        };
+        path.exists().then_some(path)
+    }
+}
+
+/// True when the path lies inside a git working tree, at any depth.
+pub fn in_git_tree(path: &Path) -> bool {
+    path.ancestors().any(|dir| dir.join(".git").exists())
 }
 
 /// Parses the command into its pipeline stages, and whether it loops.
@@ -150,6 +182,7 @@ fn stage(command: &ast::Command, pipes: bool, fed: bool) -> Stage {
     let mut stage = Stage {
         text: command.to_string(),
         name: String::new(),
+        args: Vec::new(),
         pipes,
         fed,
         redirects_stdout: false,
@@ -161,6 +194,15 @@ fn stage(command: &ast::Command, pipes: bool, fed: bool) -> Stage {
             if let Some(word) = &simple.word_or_name {
                 stage.name = word.value.clone();
             }
+            stage.args = simple
+                .suffix
+                .iter()
+                .flat_map(|s| s.0.iter())
+                .filter_map(|item| match item {
+                    ast::CommandPrefixOrSuffixItem::Word(word) => Some(word.value.clone()),
+                    _ => None,
+                })
+                .collect();
             simple
                 .prefix
                 .iter()
@@ -289,6 +331,15 @@ mod tests {
     #[test]
     fn a_heredoc_is_recognised_from_its_redirect() {
         assert!(Command::new("cat <<'EOF' > f.txt\nbody\nEOF", "", false).stages()[0].is_heredoc());
+    }
+
+    #[test]
+    fn an_argument_counts_as_a_path_only_when_it_exists() {
+        let home = PathBuf::from(std::env::var_os("HOME").unwrap());
+        let cmd = Command::new("grep -n Foo ~/", "/nowhere", false);
+        assert_eq!(cmd.stages()[0].args, ["-n", "Foo", "~/"]);
+        assert_eq!(cmd.existing_path("~/"), Some(home.join("")));
+        assert_eq!(cmd.existing_path("Foo"), None);
     }
 
     #[test]
